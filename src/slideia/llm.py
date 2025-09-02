@@ -12,6 +12,7 @@ LLM API endpoints, model names, and request logic are factored into constants an
 
 
 import os
+import re
 import requests
 import time
 from typing import Dict, List, Optional
@@ -19,12 +20,39 @@ import json
 
 # === Constants for LLM Providers ===
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "openai/gpt-3.5-turbo"
-GOOGLE_AI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+OPENROUTER_MODEL = "deepseek/deepseek-r1"
 
 
 # === Helper Functions ===
-def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 512, retries: int = 2) -> Optional[Dict]:
+def _extract_json_from_markdown(text: str) -> str:
+    """
+    Extract JSON from a Markdown code block if present.
+
+    Many LLMs return JSON wrapped in Markdown code blocks (e.g., ```json ... ```),
+    which is not valid for json.loads(). This helper strips the code block and returns
+    the raw JSON string for parsing.
+
+    Args:
+        text (str): The text possibly containing a Markdown code block.
+
+    Returns:
+        str: The extracted JSON string, or the original text if no code block is found.
+    """
+    # Find all code blocks labeled as json
+    matches = re.findall(r"```json\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
+    for match in matches:
+        candidate = match.strip()
+        # Try to parse, return the first valid JSON
+        try:
+            json.loads(candidate)
+            return candidate
+        except Exception:
+            continue
+    # Fallback: try to parse the whole text if no code block matched
+    return text.strip()
+
+
+def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries: int = 2) -> Optional[Dict]:
     """Call OpenRouter API with the given prompt and return parsed JSON if possible."""
     for _ in range(retries):
         try:
@@ -41,43 +69,25 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 512, retries: 
                 },
                 timeout=20
             )
+
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
-                return json.loads(content)
+                extracted_content = _extract_json_from_markdown(content)
+                print(extracted_content)
+                return json.loads(extracted_content)
+            
         except Exception:
             pass
+
         time.sleep(1)
     return None
-
-def _call_google_ai(prompt: str, api_key: str, retries: int = 2) -> Optional[Dict]:
-    """Call Google AI Studio API with the given prompt and return parsed JSON if possible."""
-    for _ in range(retries):
-        try:
-            response = requests.post(
-                f"{GOOGLE_AI_API_URL}?key={api_key}",
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}]
-                },
-                timeout=20
-            )
-            if response.status_code == 200:
-                candidates = response.json().get("candidates", [])
-                if candidates:
-                    content = candidates[0]["content"]["parts"][0]["text"]
-                    return json.loads(content)
-        except Exception:
-            pass
-        time.sleep(1)
-    return None
-
 
 
 def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
     """
-    Propose a slide outline for a presentation using a free LLM API (OpenRouter or Google AI Studio).
+    Propose a slide outline for a presentation using an LLM API (OpenRouter).
 
-    Tries OpenRouter (https://openrouter.ai/docs) first, then Google AI Studio (https://aistudio.google.com/app/apikey) as fallback.
-    Requires environment variable OPENROUTER_API_KEY or GOOGLE_AI_API_KEY.
+    Requires environment variable OPENROUTER_API_KEY.
 
     Args:
         topic (str): The topic of the presentation.
@@ -92,6 +102,7 @@ def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
         f"Generate a slide deck outline for the topic '{topic}' for an audience of {audience}. "
         f"The tone should be {tone}. The deck should have {slides} slides. "
         "Return a JSON object with keys: title (str), slides (list of dicts with title and summary), and citations (optional)."
+        "Ensure the JSON is complete and valid, and all quotes and brackets are closed."
     )
 
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -100,20 +111,12 @@ def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
         if result:
             return result
 
-    api_key = os.getenv("GOOGLE_AI_API_KEY")
-    if api_key:
-        result = _call_google_ai(prompt, api_key)
-        if result:
-            return result
-
     raise RuntimeError("No valid API key found or all LLM API calls failed.")
-
-
 
 
 def draft_slide(slide_spec: Dict) -> Dict:
     """
-    Draft the content for a single slide using a free LLM API (OpenRouter or Google AI Studio).
+    Draft the content for a single slide using OpenRouter.
 
     Tries OpenRouter (https://openrouter.ai/docs) first, then Google AI Studio (https://aistudio.google.com/app/apikey) as fallback.
     Requires environment variable OPENROUTER_API_KEY or GOOGLE_AI_API_KEY.
@@ -126,19 +129,14 @@ def draft_slide(slide_spec: Dict) -> Dict:
     """
     prompt = (
         f"Given the following slide spec as JSON: {json.dumps(slide_spec)}\n"
-        "Draft the slide content. Return a JSON object with keys: "
+        "Draft the slide content. Return only a valid, complete JSON object with keys: "
         "bullets (list of str), notes (str), image_prompt (str), and theme (str or dict)."
+        "Do not include Markdown or extra text. Keep the response concise and ensure all brackets and quotes are closed."
     )
 
     api_key = os.getenv("OPENROUTER_API_KEY")
     if api_key:
         result = _call_openrouter(prompt, api_key)
-        if result:
-            return result
-
-    api_key = os.getenv("GOOGLE_AI_API_KEY")
-    if api_key:
-        result = _call_google_ai(prompt, api_key)
         if result:
             return result
 
