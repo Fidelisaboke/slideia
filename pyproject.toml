@@ -7,13 +7,20 @@ name = "slideia"
 version = "0.1.0"
 description = "A Python package for slideia."
 authors = [
-    { name="Fideli Isaboke" }
+    { name="Fidel Isaboke" }
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
+dependencies = {
+    "fastapi",
+    "python-pptx",
+    "uvicorn",
+    "mcp"
+}
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "pytest-asyncio"]
+dev = ["black", "isort", "ruff"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
