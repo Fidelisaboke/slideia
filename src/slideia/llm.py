@@ -72,7 +72,6 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 extracted_content = _extract_json_from_markdown(content)
-                print(extracted_content)
                 return json.loads(extracted_content)
             
         except Exception:
