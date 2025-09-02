@@ -14,11 +14,11 @@ from pptx.util import Pt
 
 def export_slides(input_path: str, output_path: str):
     """
-    Export slides from a JSON file (input_path) to a PowerPoint (.pptx) file (output_path), using a 
+    Export slides from a JSON file (input_path) to a PowerPoint (.pptx) file (output_path), using a
     professional template.
 
-    Accessibility: All images are assigned alt-text (from image_prompt) for screen readers. 
-    If image insertion fails, a text placeholder is used instead. All logs are sent to stderr to 
+    Accessibility: All images are assigned alt-text (from image_prompt) for screen readers.
+    If image insertion fails, a text placeholder is used instead. All logs are sent to stderr to
     avoid interfering with content.
 
     The input JSON should have the structure:
@@ -101,8 +101,8 @@ def export_slides(input_path: str, output_path: str):
                     try:
                         rgb = theme['color'].lstrip('#')
                         paragraph.font.color.rgb = RGBColor(
-                            int(rgb[0:2], 16), 
-                            int(rgb[2:4], 16), 
+                            int(rgb[0:2], 16),
+                            int(rgb[2:4], 16),
                             int(rgb[4:6], 16)
                         )
                     except Exception:
