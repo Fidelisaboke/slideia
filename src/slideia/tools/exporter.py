@@ -52,7 +52,13 @@ def export_slides(input_path: str, output_path: str):
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+
     prs = Presentation(template_path)
+    # Remove all slides from the template to avoid duplicates in output
+    while len(prs.slides) > 0:
+        rId = prs.slides._sldIdLst[0].rId
+        prs.part.drop_rel(rId)
+        del prs.slides._sldIdLst[0]
 
     # Title slide (use first layout)
     title_slide_layout = prs.slide_layouts[0]
