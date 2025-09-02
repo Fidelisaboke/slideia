@@ -100,7 +100,8 @@ def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
     prompt = (
         f"Generate a slide deck outline for the topic '{topic}' for an audience of {audience}. "
         f"The tone should be {tone}. The deck should have {slides} slides. "
-        "Return a JSON object with keys: title (str), slides (list of dicts with title and summary), and citations (optional)."
+        "Return a JSON object with keys: title (str), slides (list of dicts with title and summary)"
+        ", and citations (optional)."
         "Ensure the JSON is complete and valid, and all quotes and brackets are closed."
     )
 
@@ -117,8 +118,7 @@ def draft_slide(slide_spec: Dict) -> Dict:
     """
     Draft the content for a single slide using OpenRouter.
 
-    Tries OpenRouter (https://openrouter.ai/docs) first, then Google AI Studio (https://aistudio.google.com/app/apikey) as fallback.
-    Requires environment variable OPENROUTER_API_KEY or GOOGLE_AI_API_KEY.
+    Requires environment variable OPENROUTER_API_KEY.
 
     Args:
         slide_spec (Dict): Specification for the slide (e.g., title, summary, etc).
@@ -130,7 +130,8 @@ def draft_slide(slide_spec: Dict) -> Dict:
         f"Given the following slide spec as JSON: {json.dumps(slide_spec)}\n"
         "Draft the slide content. Return only a valid, complete JSON object with keys: "
         "bullets (list of str), notes (str), image_prompt (str), and theme (str or dict)."
-        "Do not include Markdown or extra text. Keep the response concise and ensure all brackets and quotes are closed."
+        "Do not include Markdown or extra text. Keep the response concise and ensure all brackets"
+        " and quotes are closed."
     )
 
     api_key = os.getenv("OPENROUTER_API_KEY")

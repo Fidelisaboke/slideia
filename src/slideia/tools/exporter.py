@@ -14,9 +14,12 @@ from pptx.util import Pt
 
 def export_slides(input_path: str, output_path: str):
     """
-    Export slides from a JSON file (input_path) to a PowerPoint (.pptx) file (output_path), using a professional template.
+    Export slides from a JSON file (input_path) to a PowerPoint (.pptx) file (output_path), using a 
+    professional template.
 
-    Accessibility: All images are assigned alt-text (from image_prompt) for screen readers. If image insertion fails, a text placeholder is used instead. All logs are sent to stderr to avoid interfering with content.
+    Accessibility: All images are assigned alt-text (from image_prompt) for screen readers. 
+    If image insertion fails, a text placeholder is used instead. All logs are sent to stderr to 
+    avoid interfering with content.
 
     The input JSON should have the structure:
         {
@@ -54,7 +57,7 @@ def export_slides(input_path: str, output_path: str):
         data = json.load(f)
 
     prs = Presentation(template_path)
-    
+
     # Remove all slides from the template to avoid duplicates in output
     while len(prs.slides) > 0:
         rId = prs.slides._sldIdLst[0].rId
@@ -97,7 +100,11 @@ def export_slides(input_path: str, output_path: str):
                 if 'color' in theme:
                     try:
                         rgb = theme['color'].lstrip('#')
-                        paragraph.font.color.rgb = RGBColor(int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16))
+                        paragraph.font.color.rgb = RGBColor(
+                            int(rgb[0:2], 16), 
+                            int(rgb[2:4], 16), 
+                            int(rgb[4:6], 16)
+                        )
                     except Exception:
                         pass
 

@@ -2,6 +2,7 @@ import os
 
 from pptx import Presentation
 
+
 def create_minimal_template(path: str):
     """Create a minimal PowerPoint template with one title slide and one content slide.
 
@@ -28,7 +29,7 @@ def create_minimal_template(path: str):
 
     # Save template
     prs.save(path)
-    
+
 
 if __name__ == "__main__":
     out_path = os.path.join(os.path.dirname(__file__), "templates", "base_template.pptx")
