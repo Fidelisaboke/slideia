@@ -2,7 +2,6 @@
 Test FastAPI /generate_deck endpoint for slideia.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from slideia.api import app
 

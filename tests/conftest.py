@@ -3,8 +3,6 @@ Pytest fixtures for slideia tests.
 Provides reusable temp directory and sample JSON deck input.
 """
 import pytest
-import tempfile
-import os
 import json
 
 @pytest.fixture

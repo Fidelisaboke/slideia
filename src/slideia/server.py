@@ -8,8 +8,6 @@ Exposes slide generation MCP tools.
 from mcp.server.fastmcp import FastMCP
 
 from slideia.tools.exporter import generate_pptx
-
-# Import LLM functions for MCP tool exposure
 from slideia.llm import propose_outline, draft_slide
 
 mcp = FastMCP(name="slideia")
