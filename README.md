@@ -1,11 +1,9 @@
 
-# slideia
-
-AI-powered slide generator that creates slide templates from scratch.
+# Slideia
 
 ## Project Overview
 
-slideia is an open-source Python package and service for generating presentation slide decks using large language models (LLMs). It can propose outlines, draft slide content, and export to PowerPoint, all via API, CLI, or MCP protocol.
+Slideia is an open-source Python package and service for generating presentation slide decks using large language models (LLMs). It can propose outlines, draft slide content, and export to PowerPoint, all via API, CLI, or MCP protocol.
 
 ## Tech Stack
 
@@ -23,7 +21,7 @@ slideia is an open-source Python package and service for generating presentation
 
 - Python 3.8 or higher
 - pip (Python package manager)
-- (Optional) API keys for OpenRouter or Google AI Studio for LLM features
+- API key for OpenRouter
 
 ### Setup Instructions
 
@@ -42,9 +40,9 @@ slideia is an open-source Python package and service for generating presentation
 	 pip install -e .[test]
 	 pip install fastapi pydantic python-pptx requests
 	 ```
-4. (Optional) Set up LLM API keys:
-	 - For OpenRouter: `export OPENROUTER_API_KEY=...`
-	 - For Google AI Studio: `export GOOGLE_AI_API_KEY=...`
+4. Set up LLM API keys:
+	 - For OpenRouter: `export OPENROUTER_API_KEY=your_api_key`
+	 - Alternatively, you can set up an `.env` file and set `OPENROUTER_API_KEY`
 
 ## Basic Usage
 
@@ -54,15 +52,9 @@ slideia is an open-source Python package and service for generating presentation
 	```
 - **Run the FastAPI HTTP server:**
 	```bash
-	uvicorn slideia:app --factory --reload
+	uvicorn slideia:app --reload
 	```
-- **Generate a slide outline via API:**
-	```bash
-	curl -X POST http://localhost:8000/generate_outline \
-		-H 'Content-Type: application/json' \
-		-d '{"topic": "AI in Education", "audience": "Teachers", "tone": "formal", "slides": 5}'
-	```
-- **Generate a full deck via API:**
+- **Generate a full slide deck via API:**
 	```bash
 	curl -X POST http://localhost:8000/generate_deck \
 		-H 'Content-Type: application/json' \
@@ -72,7 +64,7 @@ slideia is an open-source Python package and service for generating presentation
 ## Acknowledgement
 
 - Built with inspiration from the open-source LLM and presentation tooling community.
-- Uses OpenRouter and Google AI Studio for free LLM access.
+- Uses OpenRouter for free LLM access.
 
 ## License
 
