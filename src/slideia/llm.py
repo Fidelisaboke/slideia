@@ -1,6 +1,5 @@
 
 """
-llm.py
 LLM integration layer for slideia.
 
 This module provides functions to interact with a language model (LLM) for:

@@ -1,5 +1,5 @@
 """
-Test placeholder for exporter tool.
+Test for exporter tool.
 """
 from slideia.tools import exporter
 

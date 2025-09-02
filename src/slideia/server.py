@@ -1,8 +1,7 @@
 
 """
-server.py
 Main server entry point for the slideia package.
-Exposes generate_pptx as an MCP tool using FastMCP.
+Exposes slide generation MCP tools.
 """
 
 

@@ -1,5 +1,4 @@
 """
-api.py
 FastAPI app exposing LLM generation endpoints for slideia.
 """
 from dotenv import load_dotenv
