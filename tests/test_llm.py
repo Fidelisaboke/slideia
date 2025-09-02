@@ -2,7 +2,8 @@
 Test LLM layer: propose_outline and draft_slide stubs.
 """
 import pytest
-from slideia.llm import propose_outline, draft_slide
+
+from slideia.llm import draft_slide, propose_outline
 
 
 def test_propose_outline_raises_without_api_key(monkeypatch):

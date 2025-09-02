@@ -2,13 +2,14 @@
 Test for exporter tool.
 """
 import os
+
 from slideia.tools import exporter
 
 
 def test_generate_pptx(tmp_path):
     topic = "Test Presentation"
     slides = 3
-    
+
     # Change working directory to tmp_path to avoid clutter
     old_cwd = os.getcwd()
     os.chdir(tmp_path)

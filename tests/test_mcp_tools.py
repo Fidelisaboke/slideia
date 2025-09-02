@@ -2,9 +2,10 @@
 Test MCP tool discovery and registration for slideia.
 """
 
+import asyncio
 import importlib
 import pytest
-import asyncio
+
 
 @pytest.mark.asyncio
 async def test_mcp_tools_discoverable():

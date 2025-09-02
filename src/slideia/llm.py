@@ -10,12 +10,13 @@ LLM API endpoints, model names, and request logic are factored into constants an
 """
 
 
+import json
 import os
 import re
-import requests
 import time
 from typing import Dict, Optional
-import json
+
+import requests
 
 # === Constants for LLM Providers ===
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -73,7 +74,7 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
                 content = response.json()["choices"][0]["message"]["content"]
                 extracted_content = _extract_json_from_markdown(content)
                 return json.loads(extracted_content)
-            
+
         except Exception:
             pass
 

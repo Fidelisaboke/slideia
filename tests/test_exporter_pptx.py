@@ -2,8 +2,11 @@
 Test for exporter: verifies .pptx generation and slide count.
 """
 import os
+
 from pptx import Presentation
+
 from slideia.tools.exporter import export_slides
+
 
 def test_exporter_creates_pptx(sample_deck_json, tmp_export_dir):
     output_path = os.path.join(tmp_export_dir, "test_deck.pptx")
@@ -12,6 +15,7 @@ def test_exporter_creates_pptx(sample_deck_json, tmp_export_dir):
     prs = Presentation(output_path)
     # 1 title + 2 content slides
     assert len(prs.slides) == 3
+    
 
 def test_exporter_handles_missing_image(tmp_export_dir, sample_deck_json):
     # Remove image_path from sample, but keep image_prompt

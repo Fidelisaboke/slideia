@@ -2,13 +2,14 @@
 Exporter module for the slideia package.
 """
 
+import datetime
 import json
 import os
 import sys
-import datetime
+
 from pptx import Presentation
-from pptx.util import Pt
 from pptx.dml.color import RGBColor
+from pptx.util import Pt
 
 
 def export_slides(input_path: str, output_path: str):
@@ -52,8 +53,8 @@ def export_slides(input_path: str, output_path: str):
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-
     prs = Presentation(template_path)
+    
     # Remove all slides from the template to avoid duplicates in output
     while len(prs.slides) > 0:
         rId = prs.slides._sldIdLst[0].rId

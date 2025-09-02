@@ -3,6 +3,7 @@ Test FastAPI /generate_deck endpoint for slideia.
 """
 
 from fastapi.testclient import TestClient
+
 from slideia.api import app
 
 
@@ -17,9 +18,11 @@ def test_generate_deck_handles_all_cases(monkeypatch):
         "tone": "formal",
         "slides": 3
     }
+
     # Patch LLM to raise error so we can test error handling
     def fail_outline(*a, **kw):
         raise RuntimeError("No API key")
+    
     monkeypatch.setattr("slideia.api.propose_outline", fail_outline)
     response = client.post("/generate_deck", json=payload)
     assert response.status_code in (500, 501)

@@ -2,13 +2,15 @@
 Pytest fixtures for slideia tests.
 Provides reusable temp directory and sample JSON deck input.
 """
-import pytest
 import json
+import pytest
+
 
 @pytest.fixture
 def tmp_export_dir(tmp_path):
     """Temporary directory for exporter output."""
     return tmp_path
+
 
 @pytest.fixture
 def sample_deck_json(tmp_path):
