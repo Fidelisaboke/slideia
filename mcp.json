@@ -1,0 +1,5 @@
+{
+  "name": "slideia",
+  "description": "A Python package for slideia.",
+  "entry_point": "src/slideia/server.py"
+}
