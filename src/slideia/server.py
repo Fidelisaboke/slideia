@@ -9,6 +9,8 @@ Exposes generate_pptx as an MCP tool using FastMCP.
 from mcp.server.fastmcp import FastMCP
 
 from slideia.tools.exporter import generate_pptx
+
+# Import LLM functions for MCP tool exposure
 from slideia.llm import propose_outline, draft_slide
 
 mcp = FastMCP(name="slideia")
@@ -26,18 +28,31 @@ def generate_pptx_tool(topic: str, slides: int = 5) -> str:
     return generate_pptx(topic, slides)
 
 
-# LLM-based MCP tools
+
+# MCP tool: Generate a slide outline using LLM APIs
 @mcp.tool()
 def propose_outline_tool(topic: str, audience: str, tone: str, slides: int):
     """
-    MCP tool wrapper for propose_outline.
+    Generate a slide outline for a presentation using LLM APIs.
+    Args:
+        topic (str): Presentation topic
+        audience (str): Intended audience
+        tone (str): Desired tone
+        slides (int): Number of slides
+    Returns:
+        dict: Outline with title, slides, and optional citations
     """
     return propose_outline(topic, audience, tone, slides)
 
+# MCP tool: Draft a single slide using LLM APIs
 @mcp.tool()
 def draft_slide_tool(slide_spec: dict):
     """
-    MCP tool wrapper for draft_slide.
+    Draft the content for a single slide using LLM APIs.
+    Args:
+        slide_spec (dict): Slide specification (title, summary, etc)
+    Returns:
+        dict: Drafted slide content (bullets, notes, image_prompt, theme)
     """
     return draft_slide(slide_spec)
 
