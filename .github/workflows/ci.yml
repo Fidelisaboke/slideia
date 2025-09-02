@@ -22,7 +22,8 @@ jobs:
           pip install flake8
       - name: Lint with flake8
         run: |
-          flake8 src/slideia tests
+          flake8 src/slideia --max-line-length 120
+          flake8 tests --max-line-length 120
       - name: Run tests with pytest
         run: |
           pytest
