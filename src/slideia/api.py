@@ -1,9 +1,12 @@
 """
 FastAPI app exposing LLM generation endpoints for slideia.
 """
+
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 from slideia.llm import propose_outline, draft_slide
 
 load_dotenv()

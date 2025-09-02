@@ -55,9 +55,5 @@ def draft_slide_tool(slide_spec: dict):
     """
     return draft_slide(slide_spec)
 
-def main():
-    """Main function to start the slideia MCP server."""
-    mcp.run()
-
 if __name__ == "__main__":
-    main()
+    mcp.run

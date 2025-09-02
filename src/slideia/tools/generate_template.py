@@ -3,7 +3,12 @@ from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 import os
 
-def create_minimal_template(path):
+def create_minimal_template(path: str):
+    """Create a minimal PowerPoint template with one title slide and one content slide.
+
+    Args:
+        path (str): The file path to save the template.
+    """
     prs = Presentation()
 
     # Title slide layout
@@ -20,7 +25,7 @@ def create_minimal_template(path):
     if len(slide.placeholders) > 1:
         body_shape = slide.placeholders[1]
         tf = body_shape.text_frame
-        tf.text = "• Bullet 1\n• Bullet 2"
+        tf.text = "Bullet 1\n Bullet 2"
 
     # Save template
     prs.save(path)

@@ -1,19 +1,17 @@
 """
-exporter.py
-Exporter tool for the slideia package.
+Exporter module for the slideia package.
 """
 
 import json
-from pptx import Presentation
-from pptx.util import Pt
 import os
 import sys
 import datetime
+from pptx import Presentation
+from pptx.util import Pt
+from pptx.dml.color import RGBColor
 
 
-
-
-def export_slides(input_path, output_path):
+def export_slides(input_path: str, output_path: str):
     """
     Export slides from a JSON file (input_path) to a PowerPoint (.pptx) file (output_path), using a professional template.
 
@@ -40,7 +38,6 @@ def export_slides(input_path, output_path):
         input_path (str): Path to the input JSON file describing the deck.
         output_path (str): Path to the output .pptx file.
     """
-    from pptx.dml.color import RGBColor
 
     if not os.path.exists(input_path):
         print(f"[exporter] Input file not found: {input_path}", file=sys.stderr)
