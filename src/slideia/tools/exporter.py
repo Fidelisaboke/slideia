@@ -11,6 +11,8 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.util import Pt
 
+from slideia.tools.generate_template import create_minimal_template
+
 
 def export_slides(input_path: str, output_path: str):
     """
@@ -50,8 +52,15 @@ def export_slides(input_path: str, output_path: str):
     # Use the minimal professional template
     template_path = os.path.join(os.path.dirname(__file__), "templates", "base_template.pptx")
     if not os.path.exists(template_path):
-        print(f"[exporter] Template not found: {template_path}", file=sys.stderr)
-        raise FileNotFoundError(f"Template not found: {template_path}")
+        print(
+            f"[exporter] Template not found: {template_path}, generating minimal template", 
+            file=sys.stderr
+        )
+        out_path = os.path.join(os.path.dirname(__file__), "templates", "base_template.pptx")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        create_minimal_template(out_path)
+        print(f"Template saved to {out_path}")
+
 
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)

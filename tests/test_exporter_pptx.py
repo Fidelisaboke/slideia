@@ -2,10 +2,20 @@
 Test for exporter: verifies .pptx generation and slide count.
 """
 import os
+import pytest
 
 from pptx import Presentation
 
 from slideia.tools.exporter import export_slides
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_template_exists():
+    template_dir = os.path.join(os.path.dirname(__file__), "..", "src", "slideia", "tools", "templates")
+    os.makedirs(template_dir, exist_ok=True)
+    template_path = os.path.join(template_dir, "base_template.pptx")
+    if not os.path.exists(template_path):
+        prs = Presentation()
+        prs.save(template_path)
 
 
 def test_exporter_creates_pptx(sample_deck_json, tmp_export_dir):
