@@ -2,9 +2,10 @@
 FastAPI app exposing LLM generation endpoints for slideia.
 """
 
-
+import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from slideia.llm import draft_slide, propose_outline
@@ -12,6 +13,14 @@ from slideia.llm import draft_slide, propose_outline
 load_dotenv()
 
 app = FastAPI(title="slideia LLM API")
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.getenv["NEXT_FRONTEND_URL"]],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class DeckRequest(BaseModel):
