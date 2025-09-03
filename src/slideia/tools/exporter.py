@@ -53,14 +53,13 @@ def export_slides(input_path: str, output_path: str):
     template_path = os.path.join(os.path.dirname(__file__), "templates", "base_template.pptx")
     if not os.path.exists(template_path):
         print(
-            f"[exporter] Template not found: {template_path}, generating minimal template", 
+            f"[exporter] Template not found: {template_path}, generating minimal template",
             file=sys.stderr
         )
         out_path = os.path.join(os.path.dirname(__file__), "templates", "base_template.pptx")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         create_minimal_template(out_path)
         print(f"Template saved to {out_path}")
-
 
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
