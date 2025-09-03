@@ -8,6 +8,7 @@ from pptx import Presentation
 
 from slideia.tools.exporter import export_slides
 
+
 @pytest.fixture(scope="session", autouse=True)
 def ensure_template_exists():
     template_dir = os.path.join(os.path.dirname(__file__), "..", "src", "slideia", "tools", "templates")
