@@ -17,7 +17,7 @@ app = FastAPI(title="slideia LLM API")
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv["NEXT_FRONTEND_URL"]],
+    allow_origins=[os.getenv("NEXT_FRONTEND_URL", "")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
