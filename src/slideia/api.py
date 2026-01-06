@@ -22,22 +22,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class ProposeOutlineRequest(BaseModel):
+    topic: str
+    audience: str
+    tone: str
+    slide_count: int
 
 class DeckRequest(BaseModel):
     topic: str
     audience: str
     tone: str
-    slides: int
+    slide_count: int
 
 
-# POST /generate_deck: Generate a full slide deck (outline + drafted slides)
-@app.post("/generate_deck")
+# POST /propose-outline: Propose a slide outline
+@app.post("/propose-outline")
+def generate_outline(request: ProposeOutlineRequest):
+    """
+    Propose a slide outline for a presentation.
+
+    Request JSON:
+        {"topic": str, "audience": str, "tone": str, "slide_count": int}
+
+    Response JSON:
+        {"title": str, "slides": [ ... ], ...}
+
+    Returns HTTP 500 with error message if LLM call fails.
+    """
+    try:
+        outline = propose_outline(
+            topic=request.topic,
+            audience=request.audience,
+            tone=request.tone,
+            slide_count=request.slide_count
+        )
+        return outline
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Outline generation failed: {e}")
+
+
+# POST /generate-deck: Generate a full slide deck (outline + drafted slides)
+@app.post("/generate-deck")
 def generate_deck(request: DeckRequest):
     """
     Generate a full slide deck by first proposing an outline and then drafting each slide.
 
     Request JSON:
-        {"topic": str, "audience": str, "tone": str, "slides": int}
+        {"topic": str, "audience": str, "tone": str, "slide_count": int}
 
     Response JSON:
         {
@@ -52,7 +83,7 @@ def generate_deck(request: DeckRequest):
             topic=request.topic,
             audience=request.audience,
             tone=request.tone,
-            slides=request.slides
+            slide_count=request.slide_count
         )
         slides_content = []
         for slide_spec in outline.get('slides', []):

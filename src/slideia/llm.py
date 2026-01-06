@@ -82,7 +82,7 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
     return None
 
 
-def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
+def propose_outline(topic: str, audience: str, tone: str, slide_count: int) -> Dict:
     """
     Propose a slide outline for a presentation using an LLM API (OpenRouter).
 
@@ -92,14 +92,14 @@ def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
         topic (str): The topic of the presentation.
         audience (str): The intended audience.
         tone (str): The desired tone (e.g., formal, informal).
-        slides (int): Number of slides to generate.
+        slide_count (int): Number of slides to generate.
 
     Returns:
         Dict: A dictionary with keys: title, slides (list of dicts), citations (optional).
     """
     prompt = (
         f"Generate a slide deck outline for the topic '{topic}' for an audience of {audience}. "
-        f"The tone should be {tone}. The deck should have {slides} slides. "
+        f"The tone should be {tone}. The deck should have {slide_count} slides. "
         "Return a JSON object with keys: title (str), slides (list of dicts with title and summary)"
         ", and citations (optional)."
         "Ensure the JSON is complete and valid, and all quotes and brackets are closed."
