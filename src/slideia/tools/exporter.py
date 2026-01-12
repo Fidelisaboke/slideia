@@ -62,33 +62,41 @@ def export_slides(input_path: str, output_path: str):
     # Content slides - Use BLANK layout
     blank_layout = None
     for layout in prs.slide_layouts:
-        if len(layout.placeholders) == 0 or 'blank' in layout.name.lower():
+        if len(layout.placeholders) == 0 or "blank" in layout.name.lower():
             blank_layout = layout
             print(f"[exporter] Found blank layout: {layout.name}", file=sys.stderr)
             break
-    
+
     if blank_layout is None:
         try:
             blank_layout = prs.slide_layouts[6]
             print("[exporter] Using layout 6 as blank", file=sys.stderr)
         except IndexError:
             blank_layout = prs.slide_layouts[1]
-            print("[exporter] Warning: Using layout 1, blank not found", file=sys.stderr)
+            print(
+                "[exporter] Warning: Using layout 1, blank not found", file=sys.stderr
+            )
 
     for slide_index, s in enumerate(data.get("slides", [])):
         print(f"[exporter] Processing slide {slide_index + 1}", file=sys.stderr)
-        
+
         content_slide = prs.slides.add_slide(blank_layout)
 
         # Get theme settings - HANDLE TYPE MISMATCHES
         theme = s.get("theme", {})
         if not isinstance(theme, dict):
-            print(f"[exporter] Warning: theme is {type(theme)}, expected dict. Using empty dict.", file=sys.stderr)
+            print(
+                f"[exporter] Warning: theme is {type(theme)}, expected dict. Using empty dict.",
+                file=sys.stderr,
+            )
             theme = {}
-        
+
         font_name = theme.get("font", "Calibri")
         if not isinstance(font_name, str):
-            print(f"[exporter] Warning: font is {type(font_name)}, expected str. Using 'Calibri'.", file=sys.stderr)
+            print(
+                f"[exporter] Warning: font is {type(font_name)}, expected str. Using 'Calibri'.",
+                file=sys.stderr,
+            )
             font_name = "Calibri"
 
         # Parse color if provided
@@ -104,12 +112,18 @@ def export_slides(input_path: str, output_path: str):
                 except Exception as e:
                     print(f"[exporter] Color parsing failed: {e}", file=sys.stderr)
             else:
-                print(f"[exporter] Warning: color is {type(color_value)}, expected str", file=sys.stderr)
+                print(
+                    f"[exporter] Warning: color is {type(color_value)}, expected str",
+                    file=sys.stderr,
+                )
 
         # Get title - SAFE EXTRACTION
         title_text = s.get("title", f"Slide {slide_index + 1}")
         if not isinstance(title_text, str):
-            print(f"[exporter] Warning: title is {type(title_text)}, converting to str", file=sys.stderr)
+            print(
+                f"[exporter] Warning: title is {type(title_text)}, converting to str",
+                file=sys.stderr,
+            )
             title_text = str(title_text)
 
         # Add title as a text box at the top
@@ -117,14 +131,14 @@ def export_slides(input_path: str, output_path: str):
         title_top = Inches(0.5)
         title_width = Inches(9)
         title_height = Inches(0.8)
-        
+
         title_box = content_slide.shapes.add_textbox(
             title_left, title_top, title_width, title_height
         )
         title_frame = title_box.text_frame
         title_frame.text = title_text
         title_frame.word_wrap = True
-        
+
         # Style the title
         title_para = title_frame.paragraphs[0]
         title_para.font.size = Pt(32)
@@ -139,7 +153,7 @@ def export_slides(input_path: str, output_path: str):
         content_top = Inches(1.5)
         content_width = Inches(6)
         content_height = Inches(5)
-        
+
         content_box = content_slide.shapes.add_textbox(
             content_left, content_top, content_width, content_height
         )
@@ -153,7 +167,10 @@ def export_slides(input_path: str, output_path: str):
         # Get summary - SAFE EXTRACTION
         summary = s.get("summary", "")
         if not isinstance(summary, str):
-            print(f"[exporter] Warning: summary is {type(summary)}, converting to str", file=sys.stderr)
+            print(
+                f"[exporter] Warning: summary is {type(summary)}, converting to str",
+                file=sys.stderr,
+            )
             summary = str(summary) if summary else ""
         summary = summary.strip()
 
@@ -178,7 +195,10 @@ def export_slides(input_path: str, output_path: str):
         # Get bullets - SAFE EXTRACTION
         bullets = s.get("bullets", [])
         if not isinstance(bullets, list):
-            print(f"[exporter] Warning: bullets is {type(bullets)}, expected list. Converting.", file=sys.stderr)
+            print(
+                f"[exporter] Warning: bullets is {type(bullets)}, expected list. Converting.",
+                file=sys.stderr,
+            )
             if isinstance(bullets, str):
                 # If it's a string, split by newlines or use as single item
                 bullets = [b.strip() for b in bullets.splitlines() if b.strip()]
@@ -189,7 +209,10 @@ def export_slides(input_path: str, output_path: str):
         for i, bullet_item in enumerate(bullets):
             # Ensure bullet is a string
             if not isinstance(bullet_item, str):
-                print(f"[exporter] Warning: bullet {i} is {type(bullet_item)}, converting to str", file=sys.stderr)
+                print(
+                    f"[exporter] Warning: bullet {i} is {type(bullet_item)}, converting to str",
+                    file=sys.stderr,
+                )
                 bullet_text = str(bullet_item)
             else:
                 bullet_text = bullet_item
@@ -220,7 +243,10 @@ def export_slides(input_path: str, output_path: str):
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
         if not isinstance(notes, str):
-            print(f"[exporter] Warning: notes is {type(notes)}, converting to str", file=sys.stderr)
+            print(
+                f"[exporter] Warning: notes is {type(notes)}, converting to str",
+                file=sys.stderr,
+            )
             notes = str(notes) if notes else ""
         notes = notes.strip()
 
@@ -234,7 +260,10 @@ def export_slides(input_path: str, output_path: str):
         image_path = s.get("image_path")
         image_prompt = s.get("image_prompt", "")
         if not isinstance(image_prompt, str):
-            print(f"[exporter] Warning: image_prompt is {type(image_prompt)}, converting to str", file=sys.stderr)
+            print(
+                f"[exporter] Warning: image_prompt is {type(image_prompt)}, converting to str",
+                file=sys.stderr,
+            )
             image_prompt = str(image_prompt) if image_prompt else ""
         image_prompt = image_prompt.strip()
 
