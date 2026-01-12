@@ -99,13 +99,34 @@ def propose_outline(topic: str, audience: str, tone: str, slide_count: int) -> D
     Returns:
         Dict: A dictionary with keys: title, slides (list of dicts), citations (optional).
     """
-    prompt = (
-        f"Generate a slide deck outline for the topic '{topic}' for an audience of {audience}. "
-        f"The tone should be {tone}. The deck should have {slide_count} slides. "
-        "Return a JSON object with keys: title (str), slides (list of dicts with title and summary)"
-        ", and citations (optional)."
-        "Ensure the JSON is complete and valid, and all quotes and brackets are closed."
-    )
+    prompt = f"""Create a PowerPoint presentation outline for a {slide_count}-slide deck.
+
+PRESENTATION DETAILS:
+- Topic: {topic}
+- Audience: {audience}
+- Tone: {tone}
+
+INSTRUCTIONS:
+1. Create a compelling presentation title that captures the main theme
+2. Design {slide_count} content slides (excluding title slide)
+3. Each slide should have a clear, concise title (max 6 words)
+4. Each slide should have a brief summary (1-2 sentences describing the slide's purpose)
+5. Ensure logical flow between slides
+6. Include citations only if relevant facts/data are referenced
+
+OUTPUT FORMAT (valid JSON only):
+{{
+  "title": "Presentation Title Here",
+  "slides": [
+    {{
+      "title": "Slide Title",
+      "summary": "Brief 1-2 sentence description of what this slide covers"
+    }}
+  ],
+  "citations": ["Source 1", "Source 2"]
+}}
+
+IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no extra text."""
 
     api_key = os.getenv("OPENROUTER_API_KEY")
     if api_key:
@@ -126,15 +147,69 @@ def draft_slide(slide_spec: Dict) -> Dict:
         slide_spec (Dict): Specification for the slide (e.g., title, summary, etc).
 
     Returns:
-        Dict: A dictionary with keys: bullets (list), notes (str), image_prompt (str), theme (str or dict).
+        Dict: A dictionary with keys: bullets (list), notes (str), image_prompt (str), theme (dict).
     """
-    prompt = (
-        f"Given the following slide spec as JSON: {json.dumps(slide_spec)}\n"
-        "Draft the slide content. Return only a valid, complete JSON object with keys: "
-        "bullets (list of str), notes (str), image_prompt (str), and theme (str or dict)."
-        "Do not include Markdown or extra text. Keep the response concise and ensure all brackets"
-        " and quotes are closed. It should be a valid JSON."
-    )
+
+    title = slide_spec.get("title", "Slide")
+    summary = slide_spec.get("summary", "")
+
+    prompt = f"""Create content for a PowerPoint slide.
+
+SLIDE INFORMATION:
+- Title: {title}
+- Purpose: {summary}
+
+CONTENT REQUIREMENTS:
+
+1. BULLET POINTS (3-5 bullets):
+   - Each bullet should be concise and actionable (max 10-12 words)
+   - Focus on key takeaways, not repeating the summary
+   - Use parallel structure (all bullets start similarly)
+   - Make bullets specific and concrete, not vague
+   - NO bullet should just restate the summary
+
+2. SPEAKER NOTES (2-3 sentences):
+   - Talking points for the presenter
+   - Additional context or examples
+   - Things to emphasize or explain
+   - Should complement bullets, not duplicate them
+
+3. IMAGE PROMPT (1 sentence):
+   - Describe a relevant visual, chart, or icon
+   - Be specific about what to show
+   - Consider: photos, diagrams, charts, icons, or illustrations
+   - Example: "Line chart showing revenue growth over 5 years"
+
+4. THEME (optional styling):
+   - Use professional color scheme
+   - Suggested colors: {{
+       "primary": "#1E40AF" (blue),
+       "secondary": "#059669" (green),
+       "accent": "#DC2626" (red),
+       "neutral": "#374151" (gray)
+     }}
+
+OUTPUT FORMAT (valid JSON only):
+{{
+  "bullets": [
+    "First key point or takeaway",
+    "Second key point or takeaway",
+    "Third key point or takeaway"
+  ],
+  "notes": "Speaker notes with additional context, examples, or points to emphasize during presentation.",
+  "image_prompt": "Specific description of visual element to include",
+  "theme": {{
+    "font": "Calibri",
+    "color": "#1E40AF"
+  }}
+}}
+
+CRITICAL RULES:
+- Bullets must be DIFFERENT from the summary (no redundancy!)
+- Each bullet must be unique and valuable
+- Keep bullets concise (max 12 words each)
+- Return ONLY valid JSON, no markdown, no extra text
+- Ensure all brackets and quotes are properly closed"""
 
     api_key = os.getenv("OPENROUTER_API_KEY")
     if api_key:
