@@ -20,7 +20,6 @@ import requests
 
 # === Constants for LLM Providers ===
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "deepseek/deepseek-r1"
 
 
 # === Helper Functions ===
@@ -63,7 +62,7 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": OPENROUTER_MODEL,
+                    "model": os.getenv("OPENROUTER_MODEL"),
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": max_tokens
                 },
@@ -74,6 +73,9 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
                 content = response.json()["choices"][0]["message"]["content"]
                 extracted_content = _extract_json_from_markdown(content)
                 return json.loads(extracted_content)
+            
+            # Handle rate limiting or server errors
+            print(f"OpenRouter API error {response.status_code}: {response.text}")
 
         except Exception:
             pass
@@ -131,7 +133,7 @@ def draft_slide(slide_spec: Dict) -> Dict:
         "Draft the slide content. Return only a valid, complete JSON object with keys: "
         "bullets (list of str), notes (str), image_prompt (str), and theme (str or dict)."
         "Do not include Markdown or extra text. Keep the response concise and ensure all brackets"
-        " and quotes are closed."
+        " and quotes are closed. It should be a valid JSON."
     )
 
     api_key = os.getenv("OPENROUTER_API_KEY")

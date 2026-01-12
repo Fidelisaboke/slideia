@@ -119,7 +119,7 @@ return (
         <button
           onClick={handleSubmit}
           disabled={isLoading || !topic.trim() || !audience.trim()}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full enabled:bg-gradient-to-r enabled:from-blue-600 enabled:to-purple-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">

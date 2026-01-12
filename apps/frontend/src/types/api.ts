@@ -30,6 +30,18 @@ export interface GenerateDeckResponse {
     }>;
 }
 
+export interface ExportPptxRequest {
+    topic: string;
+    audience: string;
+    tone: string;
+    slide_count: number;
+};
+
+export interface ExportPptxResponse {
+    download_url: string;
+    filename: string;
+}
+
 export interface ApiError {
     error: string;
     message?: string;

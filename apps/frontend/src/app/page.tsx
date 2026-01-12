@@ -95,7 +95,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-purple-200">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -139,6 +139,9 @@ export default function Home() {
             <DeckView
               deck={deck}
               topic={topic}
+              audience={audience}
+              tone={tone}
+              slideCount={slideCount}
               onReset={handleReset}
             />
           )}
@@ -173,7 +176,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="text-center py-8 text-gray-500 text-sm">
-        <p>Powered by FastAPI and Next.js</p>
+        <p>&copy; {new Date().getFullYear()} - Slideia</p>
       </footer>
     </div>
   );
