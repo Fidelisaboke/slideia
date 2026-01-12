@@ -16,7 +16,7 @@ def test_generate_deck_handles_all_cases(monkeypatch):
         "topic": "AI in Education",
         "audience": "Teachers",
         "tone": "formal",
-        "slides": 3
+        "slide_count": 3
     }
 
     # Patch LLM to raise error so we can test error handling
@@ -24,6 +24,6 @@ def test_generate_deck_handles_all_cases(monkeypatch):
         raise RuntimeError("No API key")
 
     monkeypatch.setattr("slideia.api.propose_outline", fail_outline)
-    response = client.post("/generate_deck", json=payload)
+    response = client.post("/generate-deck", json=payload)
     assert response.status_code in (500, 501)
     assert "failed" in response.json().get("detail", "").lower()
