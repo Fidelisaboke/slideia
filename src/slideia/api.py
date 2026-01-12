@@ -18,7 +18,7 @@ from slideia.tools.exporter import export_slides
 
 load_dotenv()
 
-app = FastAPI(title="slideia LLM API")
+app = FastAPI(title="slideia API")
 
 # CORS Configuration
 app.add_middleware(
@@ -90,7 +90,7 @@ def generate_deck(request: DeckRequest):
     Response JSON:
         {
             "outline": {"title": str, "slides": [ ... ], ...},
-            "slides": [ {"bullets": [...], "notes": str, "image_prompt": str, "theme": ...}, ... ]
+            "slides": [ {"bullets": [...], "notes": str, "image_prompt": str, "theme": dict}, ... ]
         }
 
     Returns HTTP 500 with error message if LLM call fails.
