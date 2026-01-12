@@ -18,9 +18,9 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
     const [tone, setTone] = useState('');
     const [slideCount, setSlideCount] = useState(5);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if(topic.trim() && audience.trim()) {
+        if (topic.trim() && audience.trim()) {
             onSubmit({ topic, audience, tone, slideCount});
         }
     };
@@ -31,7 +31,7 @@ return (
         Create Your Presentation
       </h2>
       
-      <div className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label
             htmlFor="topic"
@@ -149,7 +149,7 @@ return (
             'Generate Outline'
           )}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
