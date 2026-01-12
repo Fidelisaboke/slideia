@@ -1,4 +1,3 @@
-
 """
 LLM integration layer for slideia.
 
@@ -8,7 +7,6 @@ This module provides functions to interact with a language model (LLM) for:
 
 LLM API endpoints, model names, and request logic are factored into constants and helpers for maintainability.
 """
-
 
 import json
 import os
@@ -20,7 +18,6 @@ import requests
 
 # === Constants for LLM Providers ===
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "deepseek/deepseek-r1"
 
 
 # === Helper Functions ===
@@ -52,7 +49,9 @@ def _extract_json_from_markdown(text: str) -> str:
     return text.strip()
 
 
-def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries: int = 2) -> Optional[Dict]:
+def _call_openrouter(
+    prompt: str, api_key: str, max_tokens: int = 1024, retries: int = 2
+) -> Optional[Dict]:
     """Call OpenRouter API with the given prompt and return parsed JSON if possible."""
     for _ in range(retries):
         try:
@@ -60,20 +59,23 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
                 OPENROUTER_API_URL,
                 headers={
                     "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
-                    "model": OPENROUTER_MODEL,
+                    "model": os.getenv("OPENROUTER_MODEL"),
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": max_tokens
+                    "max_tokens": max_tokens,
                 },
-                timeout=20
+                timeout=20,
             )
 
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 extracted_content = _extract_json_from_markdown(content)
                 return json.loads(extracted_content)
+
+            # Handle rate limiting or server errors
+            print(f"OpenRouter API error {response.status_code}: {response.text}")
 
         except Exception:
             pass
@@ -82,7 +84,7 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
     return None
 
 
-def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
+def propose_outline(topic: str, audience: str, tone: str, slide_count: int) -> Dict:
     """
     Propose a slide outline for a presentation using an LLM API (OpenRouter).
 
@@ -92,14 +94,14 @@ def propose_outline(topic: str, audience: str, tone: str, slides: int) -> Dict:
         topic (str): The topic of the presentation.
         audience (str): The intended audience.
         tone (str): The desired tone (e.g., formal, informal).
-        slides (int): Number of slides to generate.
+        slide_count (int): Number of slides to generate.
 
     Returns:
         Dict: A dictionary with keys: title, slides (list of dicts), citations (optional).
     """
     prompt = (
         f"Generate a slide deck outline for the topic '{topic}' for an audience of {audience}. "
-        f"The tone should be {tone}. The deck should have {slides} slides. "
+        f"The tone should be {tone}. The deck should have {slide_count} slides. "
         "Return a JSON object with keys: title (str), slides (list of dicts with title and summary)"
         ", and citations (optional)."
         "Ensure the JSON is complete and valid, and all quotes and brackets are closed."
@@ -131,7 +133,7 @@ def draft_slide(slide_spec: Dict) -> Dict:
         "Draft the slide content. Return only a valid, complete JSON object with keys: "
         "bullets (list of str), notes (str), image_prompt (str), and theme (str or dict)."
         "Do not include Markdown or extra text. Keep the response concise and ensure all brackets"
-        " and quotes are closed."
+        " and quotes are closed. It should be a valid JSON."
     )
 
     api_key = os.getenv("OPENROUTER_API_KEY")
