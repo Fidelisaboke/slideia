@@ -1,4 +1,3 @@
-
 """
 LLM integration layer for slideia.
 
@@ -8,7 +7,6 @@ This module provides functions to interact with a language model (LLM) for:
 
 LLM API endpoints, model names, and request logic are factored into constants and helpers for maintainability.
 """
-
 
 import json
 import os
@@ -51,7 +49,9 @@ def _extract_json_from_markdown(text: str) -> str:
     return text.strip()
 
 
-def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries: int = 2) -> Optional[Dict]:
+def _call_openrouter(
+    prompt: str, api_key: str, max_tokens: int = 1024, retries: int = 2
+) -> Optional[Dict]:
     """Call OpenRouter API with the given prompt and return parsed JSON if possible."""
     for _ in range(retries):
         try:
@@ -59,21 +59,21 @@ def _call_openrouter(prompt: str, api_key: str, max_tokens: int = 1024, retries:
                 OPENROUTER_API_URL,
                 headers={
                     "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 json={
                     "model": os.getenv("OPENROUTER_MODEL"),
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": max_tokens
+                    "max_tokens": max_tokens,
                 },
-                timeout=20
+                timeout=20,
             )
 
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 extracted_content = _extract_json_from_markdown(content)
                 return json.loads(extracted_content)
-            
+
             # Handle rate limiting or server errors
             print(f"OpenRouter API error {response.status_code}: {response.text}")
 

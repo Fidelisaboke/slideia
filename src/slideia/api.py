@@ -5,14 +5,13 @@ FastAPI app exposing LLM generation endpoints for slideia.
 import json
 import os
 import tempfile
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from pathlib import Path
 
 from slideia.llm import draft_slide, propose_outline
 from slideia.tools.exporter import export_slides
@@ -167,7 +166,9 @@ def export_pptx(request: DeckRequest):
             deck_data["slides"].append(slide_data)
 
         # Create temporary JSON file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json", encoding="utf-8") as tmp_json:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".json", encoding="utf-8"
+        ) as tmp_json:
             json_path = tmp_json.name
             json.dump(deck_data, tmp_json, indent=2)
 
@@ -208,5 +209,5 @@ def health_check():
         "downloads_dir": str(DOWNLOADS_DIR),
         "downloads_exists": DOWNLOADS_DIR.exists(),
         "pptx_files": [f.name for f in files],
-        "file_count": len(files)
+        "file_count": len(files),
     }
