@@ -1,9 +1,7 @@
-
 """
 Main server entry point for the slideia package.
 Exposes slide generation MCP tools.
 """
-
 
 from mcp.server.fastmcp import FastMCP
 
@@ -40,6 +38,7 @@ def propose_outline_tool(topic: str, audience: str, tone: str, slides_count: int
         dict: Outline with title, slides, and optional citations
     """
     return propose_outline(topic, audience, tone, slides_count)
+
 
 # MCP tool: Draft a single slide using LLM APIs
 @mcp.tool()

@@ -18,7 +18,7 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
     const [tone, setTone] = useState('');
     const [slideCount, setSlideCount] = useState(5);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (topic.trim() && audience.trim()) {
             onSubmit({ topic, audience, tone, slideCount});
