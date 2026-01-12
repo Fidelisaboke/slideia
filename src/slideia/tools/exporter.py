@@ -195,7 +195,11 @@ def export_slides(input_path: str, output_path: str):
 
                 # Set alt text for accessibility
                 if pic and image_prompt:
-                    pic.alt_text = image_prompt
+                    try:
+                        if hasattr(pic, "alt_text"):
+                            pic.alt_text = image_prompt
+                    except Exception as e:
+                        print(f"[exporter] Alt text assignment failed: {e}", file=sys.stderr)
 
             except Exception as e:
                 print(
