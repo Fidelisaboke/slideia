@@ -4,6 +4,7 @@ FastAPI app exposing LLM generation endpoints for slideia.
 
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -15,6 +16,9 @@ from pydantic import BaseModel
 
 from slideia.llm import draft_slide, propose_outline
 from slideia.tools.exporter import export_slides
+from slideia.utils.cache import Cache
+
+cache = Cache()
 
 load_dotenv()
 
@@ -51,6 +55,50 @@ class DeckRequest(BaseModel):
     slide_count: int
 
 
+def generate_full_deck(topic: str, audience: str, tone: str, slide_count: int) -> dict:
+    """
+    Generate complete deck with caching.
+
+    Returns:
+        {
+            "outline": {...},
+            "slides": [...]
+        }
+    """
+    # Check cache first
+    cached = cache.get(topic, audience, tone, slide_count)
+    if cached:
+        return cached
+
+    print("[generate_full_deck] Generating new deck (not in cache)", file=sys.stderr)
+
+    # Generate outline
+    outline = propose_outline(
+        topic=topic,
+        audience=audience,
+        tone=tone,
+        slide_count=slide_count,
+    )
+
+    # Draft all slides
+    slides_content = []
+    for i, slide_spec in enumerate(outline.get("slides", [])):
+        print(
+            f"[generate_full_deck] Drafting slide {i + 1}/{len(outline.get('slides', []))}",
+            file=sys.stderr,
+        )
+        slide_content = draft_slide(slide_spec)
+        slides_content.append(slide_content)
+
+    # Prepare result
+    result = {"outline": outline, "slides": slides_content}
+
+    # Cache it
+    cache.set(topic, audience, tone, slide_count, result)
+
+    return result
+
+
 # POST /propose-outline: Propose a slide outline
 @app.post("/propose-outline")
 def generate_outline(request: ProposeOutlineRequest):
@@ -66,15 +114,16 @@ def generate_outline(request: ProposeOutlineRequest):
     Returns HTTP 500 with error message if LLM call fails.
     """
     try:
-        outline = propose_outline(
-            topic=request.topic,
-            audience=request.audience,
-            tone=request.tone,
-            slide_count=request.slide_count,
+        # Generate full deck (outline + slides) and cache it
+        deck = generate_full_deck(
+            request.topic, request.audience, request.tone, request.slide_count
         )
-        return outline
+
+        # Return only the outline to the user
+        return deck["outline"]
+
     except Exception as e:
-        print(f"Error generating outline: {e}")
+        print(f"[propose-outline] ERROR: {e}", file=sys.stderr)
         raise HTTPException(status_code=500, detail=f"Outline generation failed: {e}")
 
 
@@ -96,23 +145,15 @@ def generate_deck(request: DeckRequest):
     Returns HTTP 500 with error message if LLM call fails.
     """
     try:
-        outline = propose_outline(
-            topic=request.topic,
-            audience=request.audience,
-            tone=request.tone,
-            slide_count=request.slide_count,
+        # Use cached deck if available
+        deck = generate_full_deck(
+            request.topic, request.audience, request.tone, request.slide_count
         )
-        slides_content = []
-        for slide_spec in outline.get("slides", []):
-            try:
-                slide_content = draft_slide(slide_spec)
-                slides_content.append(slide_content)
-            except Exception as e:
-                print(f"Error drafting slide {slide_spec.get('title', '')}: {e}")
-                raise HTTPException(status_code=500, detail=f"Drafting failed: {e}")
-        return {"outline": outline, "slides": slides_content}
+
+        return deck
+
     except Exception as e:
-        print(f"Error generating deck: {e}")
+        print(f"[generate-deck] ERROR: {e}", file=sys.stderr)
         raise HTTPException(status_code=500, detail=f"Deck generation failed: {e}")
 
 
@@ -131,23 +172,24 @@ def export_pptx(request: DeckRequest):
     Returns HTTP 500 with error message if LLM call or export fails.
     """
     json_path = None
-    output_path = None
 
     try:
-        # Generate full deck
-        outline = propose_outline(
-            topic=request.topic,
-            audience=request.audience,
-            tone=request.tone,
-            slide_count=request.slide_count,
+        print("\n[export-pptx] Starting export...", file=sys.stderr)
+
+        # Use cached deck if available
+        deck = generate_full_deck(
+            request.topic, request.audience, request.tone, request.slide_count
         )
 
-        slides_content = []
-        for slide_spec in outline.get("slides", []):
-            slide_content = draft_slide(slide_spec)
-            slides_content.append(slide_content)
+        outline = deck["outline"]
+        slides_content = deck["slides"]
 
-        # Data for export
+        print(
+            f"[export-pptx] Using deck with {len(slides_content)} slides",
+            file=sys.stderr,
+        )
+
+        # Prepare data for export
         deck_data = {
             "title": outline.get("title", request.topic),
             "subtitle": f"For {request.audience}",
@@ -172,31 +214,39 @@ def export_pptx(request: DeckRequest):
             json_path = tmp_json.name
             json.dump(deck_data, tmp_json, indent=2)
 
-        # Generate output filename
+        # Generate filename
         safe_topic = "".join(
             c for c in request.topic if c.isalnum() or c in (" ", "-", "_")
         ).strip()
         safe_topic = safe_topic.replace(" ", "_")[:50]
+        if not safe_topic:
+            safe_topic = "presentation"
+
         output_filename = f"{safe_topic}.pptx"
         output_path = DOWNLOADS_DIR / output_filename
 
         # Export to PPTX
+        print(f"[export-pptx] Exporting to {output_path}", file=sys.stderr)
         export_slides(json_path, str(output_path))
 
-        # Clean up temporary JSON file
-        os.unlink(json_path)
+        print("[export-pptx] ✓ Export complete!", file=sys.stderr)
 
         # Return download URL
-        download_url = f"/downloads/{output_filename}"
-        return {"download_url": download_url, "filename": output_filename}
+        return {
+            "download_url": f"/downloads/{output_filename}",
+            "filename": output_filename,
+        }
+
     except Exception as e:
-        print(f"Error exporting PPTX: {e}")
+        print(f"[export-pptx] ERROR: {e}", file=sys.stderr)
         raise HTTPException(status_code=500, detail=f"PPTX export failed: {e}")
 
     finally:
-        # Clean up temporary files if they exist
         if json_path and os.path.exists(json_path):
-            os.unlink(json_path)
+            try:
+                os.unlink(json_path)
+            except Exception:
+                pass
 
 
 # GET /health: Health check endpoint
