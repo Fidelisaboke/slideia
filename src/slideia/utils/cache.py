@@ -1,5 +1,6 @@
 import hashlib
 import sys
+from copy import deepcopy
 from datetime import datetime, timedelta
 
 
@@ -27,7 +28,7 @@ class Cache:
             data, expiry = self._cache[key]
             if datetime.now() < expiry:
                 print(f"[CACHE] HIT for key {key[:8]}...", file=sys.stderr)
-                return data
+                return deepcopy(data)
             else:
                 print(f"[CACHE] EXPIRED for key {key[:8]}...", file=sys.stderr)
                 del self._cache[key]
