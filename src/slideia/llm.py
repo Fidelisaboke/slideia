@@ -204,6 +204,8 @@ OUTPUT FORMAT (valid JSON only):
   }}
 }}
 
+You can use any proper font and color that is available on PowerPoint, as long as it is good for the presentation.
+
 CRITICAL RULES:
 - Bullets must be DIFFERENT from the summary (no redundancy!)
 - Each bullet must be unique and valuable
