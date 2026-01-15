@@ -176,21 +176,22 @@ def export_slides(input_path: str, output_path: str):
 
         # Add summary if present
         if summary:
-            summary_lines = summary
+            summary_lines = summary.split('\n')
             for i, line in enumerate(summary_lines):
                 if i == 0:
                     p = text_frame.paragraphs[0]
+                    p.text = line.strip()
                 else:
                     p = text_frame.add_paragraph()
+                    p.text = line.strip()
 
-                p.text = line
-                p.level = 0
-                p.font.size = Pt(14)
-                p.font.name = font_name
-                if font_color:
-                    p.font.color.rgb = font_color
-                p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
-                p.alignment = PP_ALIGN.LEFT
+            p.level = 0
+            p.font.size = Pt(14)
+            p.font.name = font_name
+            if font_color:
+                p.font.color.rgb = font_color
+            p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
+            p.alignment = PP_ALIGN.LEFT
 
         # Get bullets - SAFE EXTRACTION
         bullets = s.get("bullets", [])
