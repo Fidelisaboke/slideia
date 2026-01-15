@@ -176,15 +176,15 @@ def export_slides(input_path: str, output_path: str):
 
         # Add summary if present
         if summary:
-                p = text_frame.paragraphs[0]
-                p.text = summary
-                p.level = 0
-                p.font.size = Pt(14)
-                p.font.name = font_name
-                if font_color:
-                    p.font.color.rgb = font_color
-                p.space_after = Pt(12)
-                p.alignment = PP_ALIGN.LEFT
+            p = text_frame.paragraphs[0]
+            p.text = summary
+            p.level = 0
+            p.font.size = Pt(14)
+            p.font.name = font_name
+            if font_color:
+                p.font.color.rgb = font_color
+            p.space_after = Pt(12)
+            p.alignment = PP_ALIGN.LEFT
 
         # Get bullets - SAFE EXTRACTION
         bullets = s.get("bullets", [])
