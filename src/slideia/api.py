@@ -16,11 +16,15 @@ from pydantic import BaseModel
 
 from slideia.llm import draft_slide, propose_outline
 from slideia.tools.exporter import export_slides
-from slideia.utils.cache import RedisCache
-
-cache = RedisCache()
+from slideia.utils.cache import RedisCache, Cache
 
 load_dotenv()
+
+if os.getenv("ENV") == "test":
+    # Use the custom in-memory cache for tests
+    cache = Cache()
+else:
+    cache = RedisCache()
 
 app = FastAPI(title="slideia API", version="0.3.0")
 
