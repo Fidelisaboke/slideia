@@ -36,14 +36,17 @@ class RedisCache:
         self, topic: str, audience: str, tone: str, slide_count: int
     ) -> dict | None:
         key = self._generate_key(topic, audience, tone, slide_count)
+        try:
+            value = self._client.get(key)
+            if value is None:
+                print(f"[REDIS] MISS {key[:12]}...", file=sys.stderr)
+                return None
 
-        value = self._client.get(key)
-        if value is None:
-            print(f"[REDIS] MISS {key[:12]}...", file=sys.stderr)
+            print(f"[REDIS] HIT {key[:12]}...", file=sys.stderr)
+            return json.loads(value)
+        except (redis.exceptions.RedisError, json.JSONDecodeError) as e:
+            print(f"[REDIS] GET Error for key {key[:12]}...: {e}", file=sys.stderr)
             return None
-
-        print(f"[REDIS] HIT {key[:12]}...", file=sys.stderr)
-        return json.loads(value)
 
     def set(
         self,
