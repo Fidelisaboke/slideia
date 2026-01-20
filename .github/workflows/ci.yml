@@ -20,6 +20,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[test]
           pip install -r requirements.txt
+      - name: Load test environment variables
+        run: |
+          if [ -f .env.test ]; then
+            echo "Loading environment variables from .env.test"
+            grep -vE '^\s*(#|$)' .env.test >> $GITHUB_ENV
+            echo "Environment variables loaded successfully."
+          else
+            echo ".env.test file not found!"
+            exit 1
+          fi
       - name: Lint with flake8
         run: |
           flake8 src/slideia --max-line-length 120
