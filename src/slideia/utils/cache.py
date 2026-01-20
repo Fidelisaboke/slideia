@@ -67,8 +67,9 @@ class RedisCache:
         )
 
     def clear(self):
-        self._client.flushdb()
-        print("[REDIS] CLEARED", file=sys.stderr)
+        for key in self._client.scan_iter(match="deck:*"):
+            self._cleint.delete(key)
+        print("[REDIS] CLEARED cache keys", file=sys.stderr)
 
 
 class Cache:
