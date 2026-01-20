@@ -22,7 +22,7 @@ cache = RedisCache()
 
 load_dotenv()
 
-app = FastAPI(title="slideia API")
+app = FastAPI(title="slideia API", version="0.3.0")
 
 # CORS Configuration
 app.add_middleware(
