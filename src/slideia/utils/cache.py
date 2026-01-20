@@ -1,12 +1,13 @@
 """Cache utility for Slideia."""
 
 import hashlib
+import json
 import os
 import sys
 from copy import deepcopy
 from datetime import datetime, timedelta
+
 import redis
-import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,7 +23,7 @@ class RedisCache:
         redis_url = os.getenv("REDIS_URL")
         if not redis_url:
             raise RuntimeError("REDIS_URL is not set")
-        
+
         self._ttl_seconds = int(os.getenv("CACHE_TTL_MINUTES", "60")) * 60
         self._client = redis.from_url(redis_url, decode_responses=True)
 
@@ -58,16 +59,19 @@ class RedisCache:
     ):
         key = self._generate_key(topic, audience, tone, slide_count)
 
-        self._client.setex(
-            key,
-            self._ttl_seconds,
-            json.dumps(data),
-        )
+        try:
+            self._client.setex(
+                key,
+                self._ttl_seconds,
+                json.dumps(data),
+            )
 
-        print(
-            f"[REDIS] SET {key[:12]}... (ttl={self._ttl_seconds}s)",
-            file=sys.stderr,
-        )
+            print(
+                f"[REDIS] SET {key[:12]}... (ttl={self._ttl_seconds}s)",
+                file=sys.stderr,
+            )
+        except redis.exceptions.RedisError as e:
+            print(f"[REDIS] SET Error for key {key[:12]}...: {e}", file=sys.stderr)
 
     def clear(self):
         for key in self._client.scan_iter(match="deck:*"):
