@@ -7,6 +7,9 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 import redis
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class RedisCache:
@@ -16,12 +19,12 @@ class RedisCache:
     """
 
     def __init__(self):
+        redis_url = os.getenv("REDIS_URL")
+        if not redis_url:
+            raise RuntimeError("REDIS_URL is not set")
+        
         self._ttl_seconds = int(os.getenv("CACHE_TTL_MINUTES", "60")) * 60
-        self._client = redis.Redis(
-            host=os.getenv("REDIS_HOST", "localhost"),
-            port=int(os.getenv("REDIS_PORT", "6379")),
-            decode_responses=True,
-        )
+        self._client = redis.from_url(redis_url, decode_responses=True)
 
     def _generate_key(
         self, topic: str, audience: str, tone: str, slide_count: int
