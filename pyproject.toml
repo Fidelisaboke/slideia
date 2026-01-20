@@ -15,7 +15,8 @@ dependencies = [
     "fastapi",
     "python-pptx",
     "uvicorn",
-    "mcp"
+    "mcp",
+    "redis",
 ]
 
 [project.optional-dependencies]

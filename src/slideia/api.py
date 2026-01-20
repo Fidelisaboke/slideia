@@ -16,9 +16,9 @@ from pydantic import BaseModel
 
 from slideia.llm import draft_slide, propose_outline
 from slideia.tools.exporter import export_slides
-from slideia.utils.cache import Cache
+from slideia.utils.cache import RedisCache
 
-cache = Cache()
+cache = RedisCache()
 
 load_dotenv()
 
