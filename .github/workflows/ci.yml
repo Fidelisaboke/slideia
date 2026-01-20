@@ -22,7 +22,7 @@ jobs:
           pip install -r requirements.txt
       - name: Load test environment variables
         run: |
-          if [ -f ../.env.test ]; then
+          if [ -f ../../.env.test ]; then
             echo "Loading environment variables from .env.test"
             grep -vE '^\s*(#|$)' ../.env.test >> $GITHUB_ENV
             echo "Environment variables loaded successfully."
