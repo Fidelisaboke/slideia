@@ -39,7 +39,7 @@ jobs:
         run: |
           if [ -f backend/.env.test ]; then
             echo "Loading environment variables from .env.test"
-            grep -vE '^\s*(#|$)' .env.test >> $GITHUB_ENV
+            grep -vE '^\s*(#|$)' backend/.env.test >> $GITHUB_ENV
             echo "Environment variables loaded successfully."
           else
             echo ".env.test file not found!"
@@ -77,10 +77,10 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "frontend/pnpm-lock.yaml"
 
-      - name: Install pnpm
-        run: | 
-          npm install -g pnpm
-          echo "$(npm bin -g)" >> $GITHUB_PATH
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
       - name: Install frontend dependencies
         run: |
