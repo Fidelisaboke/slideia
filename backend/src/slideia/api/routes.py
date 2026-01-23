@@ -5,11 +5,10 @@ import tempfile
 
 from fastapi import APIRouter, HTTPException
 from slideia.api.schemas import DeckRequest, ProposeOutlineRequest
-from slideia.domain.deck.exporter import export_slides
-from slideia.domain.deck.services import generate_full_deck
 from slideia.core.config import settings
+from slideia.domain.deck.exporter import export_slides
+from slideia.domain.deck.services import Cache, RedisCache, generate_full_deck
 from slideia.infra.openrouter import OpenRouterLLM
-from slideia.domain.deck.services import Cache, RedisCache
 
 router = APIRouter()
 
@@ -39,7 +38,12 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
     try:
         # Generate full deck (outline + slides) and cache it
         deck = generate_full_deck(
-            request.topic, request.audience, request.tone, request.slide_count, llm, cache
+            request.topic,
+            request.audience,
+            request.tone,
+            request.slide_count,
+            llm,
+            cache,
         )
 
         # Return only the outline to the user
@@ -70,7 +74,12 @@ def generate_deck(request: DeckRequest):
     try:
         # Use cached deck if available
         deck = generate_full_deck(
-            request.topic, request.audience, request.tone, request.slide_count, llm, cache
+            request.topic,
+            request.audience,
+            request.tone,
+            request.slide_count,
+            llm,
+            cache,
         )
 
         return deck
@@ -101,7 +110,12 @@ def export_pptx(request: DeckRequest):
 
         # Use cached deck if available
         deck = generate_full_deck(
-            request.topic, request.audience, request.tone, request.slide_count, llm, cache
+            request.topic,
+            request.audience,
+            request.tone,
+            request.slide_count,
+            llm,
+            cache,
         )
 
         outline = deck["outline"]
