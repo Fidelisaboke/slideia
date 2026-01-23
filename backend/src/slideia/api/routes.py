@@ -59,8 +59,10 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
         return deck.outline
 
     except Exception as e:
-        logger.error(f"ERROR: {e}")
-        raise HTTPException(status_code=500, detail=f"Outline generation failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
 
 # POST /generate-deck: Generate a full slide deck (outline + drafted slides)
@@ -95,14 +97,14 @@ def generate_deck(request: DeckRequest):
             cache,
         )
 
-        logger.info(
-            f"Deck generated successfully with {len(deck.slides)} slides"
-        )
+        logger.info(f"Deck generated successfully with {len(deck.slides)} slides")
         return deck.to_dict()
 
     except Exception as e:
-        logger.error(f"{e}")
-        raise HTTPException(status_code=500, detail=f"Deck generation failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
 
 # POST: /export-pptx: Export deck to a PowerPoint file
@@ -188,8 +190,10 @@ def export_pptx(request: DeckRequest):
         }
 
     except Exception as e:
-        logger.error(f"ERROR: {e}")
-        raise HTTPException(status_code=500, detail=f"PPTX export failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
     finally:
         if json_path and os.path.exists(json_path):
