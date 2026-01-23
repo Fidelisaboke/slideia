@@ -208,3 +208,6 @@ __marimo__/
 
 # Logging directory
 logs/
+
+# Slides template
+src/slideia/domain/deck/templates/
