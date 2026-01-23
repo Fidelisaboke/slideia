@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from pydantic import ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from slideia.core.paths import DOWNLOADS_DIR, ENV_FILE
 
 
@@ -15,7 +14,7 @@ class Settings(BaseSettings):
     DOWNLOADS_DIR: Path = DOWNLOADS_DIR
     LOG_LEVEL: str = "INFO"
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=ENV_FILE, env_file_encoding="utf-8", case_sensitive=True
     )
 
