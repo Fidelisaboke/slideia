@@ -50,30 +50,6 @@ def fake_deck():
                 },
             ]
 
-    class FakeDeck:
-        def __init__(self):
-            self.outline = {
-                "title": "Accessibility in AI",
-                "slides": [
-                    {"title": "Intro", "summary": "Why it matters."},
-                    {"title": "Best Practices", "summary": "How to do it."},
-                ],
-            }
-            self.slides = [
-                {
-                    "bullets": ["Point 1"],
-                    "notes": "Note 1",
-                    "image_prompt": "Prompt 1",
-                    "theme": {"font": "Arial", "color": "#003366"},
-                },
-                {
-                    "bullets": ["Point 2"],
-                    "notes": "Note 2",
-                    "image_prompt": "Prompt 2",
-                    "theme": {"font": "Calibri", "color": "#222222"},
-                },
-            ]
-
         def to_dict(self):
             return {"outline": self.outline, "slides": self.slides}
 

@@ -4,7 +4,6 @@ Exporter module for the slideia package.
 
 import json
 import os
-import sys
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
