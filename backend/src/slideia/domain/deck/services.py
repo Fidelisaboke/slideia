@@ -63,8 +63,6 @@ def generate_full_deck(
     for slide_spec in outline.get("slides", []):
         slides_content.append(llm.draft_slide(slide_spec))
 
-    logger.info(f"Slides content: {slides_content}")
-
     logger.info("Deck generation complete!")
     result = {
         "outline": outline,
