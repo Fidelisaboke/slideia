@@ -5,11 +5,12 @@ Exposes slide generation MCP tools.
 
 from mcp.server.fastmcp import FastMCP
 
-from slideia.infra.openrouter import OpenRouterLLM
+from slideia.core.config import settings
 from slideia.domain.deck.exporter import export_slides
+from slideia.infra.openrouter import OpenRouterLLM
 
 mcp = FastMCP(name="slideia")
-llm = OpenRouterLLM()
+llm = OpenRouterLLM(settings.OPENROUTER_API_KEY, settings.OPENROUTER_MODEL)
 
 
 @mcp.tool()
