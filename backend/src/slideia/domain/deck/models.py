@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Slide:
-    title: str
     bullets: list[str]
+    title: str | None = None
     notes: str | None = None
     image_prompt: str | None = None
     theme: dict | None = None

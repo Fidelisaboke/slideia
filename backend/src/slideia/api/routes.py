@@ -1,14 +1,16 @@
 import json
 import os
-import sys
 import tempfile
 
 from fastapi import APIRouter, HTTPException
 from slideia.api.schemas import DeckRequest, ProposeOutlineRequest
 from slideia.core.config import settings
+from slideia.core.logging import get_logger
 from slideia.domain.deck.exporter import export_slides
 from slideia.domain.deck.services import Cache, RedisCache, generate_full_deck
 from slideia.infra.openrouter import OpenRouterLLM
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -36,7 +38,11 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
     Returns HTTP 500 with error message if LLM call fails.
     """
     try:
-        # Generate full deck (outline + slides) and cache it
+        logger.info(
+            f"Generating outline for topic='{request.topic}', "
+            f"audience='{request.audience}', slides={request.slide_count}"
+        )
+        # Use cached deck if available
         deck = generate_full_deck(
             request.topic,
             request.audience,
@@ -47,11 +53,16 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
         )
 
         # Return only the outline to the user
-        return deck["outline"]
+        logger.info(
+            f"Outline generated successfully with {len(deck.outline.get('slides', []))} slides"
+        )
+        return deck.outline
 
     except Exception as e:
-        print(f"[propose-outline] ERROR: {e}", file=sys.stderr)
-        raise HTTPException(status_code=500, detail=f"Outline generation failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
 
 # POST /generate-deck: Generate a full slide deck (outline + drafted slides)
@@ -72,6 +83,10 @@ def generate_deck(request: DeckRequest):
     Returns HTTP 500 with error message if LLM call fails.
     """
     try:
+        logger.info(
+            f"Generating full deck for topic='{request.topic}', "
+            f"audience='{request.audience}', slides={request.slide_count}"
+        )
         # Use cached deck if available
         deck = generate_full_deck(
             request.topic,
@@ -82,11 +97,14 @@ def generate_deck(request: DeckRequest):
             cache,
         )
 
-        return deck
+        logger.info(f"Deck generated successfully with {len(deck.slides)} slides")
+        return deck.to_dict()
 
     except Exception as e:
-        print(f"[generate-deck] ERROR: {e}", file=sys.stderr)
-        raise HTTPException(status_code=500, detail=f"Deck generation failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
 
 # POST: /export-pptx: Export deck to a PowerPoint file
@@ -106,7 +124,7 @@ def export_pptx(request: DeckRequest):
     json_path = None
 
     try:
-        print("\n[export-pptx] Starting export...", file=sys.stderr)
+        logger.info(f"\nStarting PPTX export for topic='{request.topic}'")
 
         # Use cached deck if available
         deck = generate_full_deck(
@@ -118,13 +136,10 @@ def export_pptx(request: DeckRequest):
             cache,
         )
 
-        outline = deck["outline"]
-        slides_content = deck["slides"]
+        outline = deck.outline
+        slides_content = deck.slides
 
-        print(
-            f"[export-pptx] Using deck with {len(slides_content)} slides",
-            file=sys.stderr,
-        )
+        logger.info(f"Using deck with {len(slides_content)} slides")
 
         # Prepare data for export
         deck_data = {
@@ -137,10 +152,10 @@ def export_pptx(request: DeckRequest):
             slide_data = {
                 "title": slide_spec.get("title", f"Slide {i + 1}"),
                 "summary": slide_spec.get("summary", ""),
-                "bullets": slides_content[i].get("bullets", []),
-                "image_prompt": slides_content[i].get("image_prompt", ""),
-                "notes": slides_content[i].get("notes", ""),
-                "theme": slides_content[i].get("theme", {}),
+                "bullets": slides_content[i].bullets,
+                "image_prompt": slides_content[i].image_prompt,
+                "notes": slides_content[i].notes,
+                "theme": slides_content[i].theme,
             }
             deck_data["slides"].append(slide_data)
 
@@ -163,10 +178,10 @@ def export_pptx(request: DeckRequest):
         output_path = settings.DOWNLOADS_DIR / output_filename
 
         # Export to PPTX
-        print(f"[export-pptx] Exporting to {output_path}", file=sys.stderr)
+        logger.info(f"Exporting to {output_path}")
         export_slides(json_path, str(output_path))
 
-        print("[export-pptx] ✓ Export complete!", file=sys.stderr)
+        logger.info("✓ Export complete!")
 
         # Return download URL
         return {
@@ -175,15 +190,18 @@ def export_pptx(request: DeckRequest):
         }
 
     except Exception as e:
-        print(f"[export-pptx] ERROR: {e}", file=sys.stderr)
-        raise HTTPException(status_code=500, detail=f"PPTX export failed: {e}")
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
 
     finally:
         if json_path and os.path.exists(json_path):
             try:
                 os.unlink(json_path)
+                logger.debug(f"Cleaned up temporary file: {json_path}")
             except Exception:
-                pass
+                logger.debug(f"Failed to clean up temporary file: {json_path}")
 
 
 # GET /health: Health check endpoint

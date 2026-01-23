@@ -2,9 +2,11 @@ import json
 import re
 
 import requests
-
+from slideia.core.logging import get_logger
 from slideia.domain.llm.interfaces import OutlineGenerator, SlideGenerator
 from slideia.domain.llm.prompts import OUTLINE_PROMPT, SLIDE_PROMPT
+
+logger = get_logger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -26,6 +28,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         self.model = model
 
     def _call(self, prompt: str, max_tokens: int = 1024) -> dict:
+        logger.info("Calling OpenRouter LLM...")
         response = requests.post(
             OPENROUTER_API_URL,
             headers={
