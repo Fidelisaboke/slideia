@@ -210,4 +210,4 @@ __marimo__/
 logs/
 
 # Slides template
-backend/src/slideia/domain/deck/templates/
+src/slideia/domain/deck/templates/
