@@ -10,7 +10,10 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
+from slideia.core.logging import get_logger
 from slideia.domain.deck.services import create_minimal_template
+
+logger = get_logger(__name__)
 
 
 def export_slides(input_path: str, output_path: str):
@@ -18,7 +21,7 @@ def export_slides(input_path: str, output_path: str):
     Export slides from a JSON file to a PowerPoint file.
     """
     if not os.path.exists(input_path):
-        print(f"[exporter] Input file not found: {input_path}", file=sys.stderr)
+        logger.error(f"Input file not found: {input_path}")
         raise FileNotFoundError(f"Input file not found: {input_path}")
 
     # Use the minimal professional template
@@ -26,16 +29,15 @@ def export_slides(input_path: str, output_path: str):
         os.path.dirname(__file__), "templates", "base_template.pptx"
     )
     if not os.path.exists(template_path):
-        print(
-            f"[exporter] Template not found: {template_path}, generating minimal template",
-            file=sys.stderr,
+        logger.warning(
+            f"Template not found: {template_path}, generating minimal template"
         )
         out_path = os.path.join(
             os.path.dirname(__file__), "templates", "base_template.pptx"
         )
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         create_minimal_template(out_path)
-        print(f"Template saved to {out_path}", file=sys.stderr)
+        logger.info(f"Template saved to {out_path}")
 
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -61,39 +63,31 @@ def export_slides(input_path: str, output_path: str):
     for layout in prs.slide_layouts:
         if len(layout.placeholders) == 0 or "blank" in layout.name.lower():
             blank_layout = layout
-            print(f"[exporter] Found blank layout: {layout.name}", file=sys.stderr)
+            logger.info(f"Found blank layout: {layout.name}")
             break
 
     if blank_layout is None:
         try:
             blank_layout = prs.slide_layouts[6]
-            print("[exporter] Using layout 6 as blank", file=sys.stderr)
+            logger.info("Using layout 6 as blank")
         except IndexError:
             blank_layout = prs.slide_layouts[1]
-            print(
-                "[exporter] Warning: Using layout 1, blank not found", file=sys.stderr
-            )
+            logger.warning("Using layout 1, blank not found")
 
     for slide_index, s in enumerate(data.get("slides", [])):
-        print(f"[exporter] Processing slide {slide_index + 1}", file=sys.stderr)
+        logger.info(f"Processing slide {slide_index + 1}")
 
         content_slide = prs.slides.add_slide(blank_layout)
 
         # Get theme settings - HANDLE TYPE MISMATCHES
         theme = s.get("theme", {})
         if not isinstance(theme, dict):
-            print(
-                f"[exporter] Warning: theme is {type(theme)}, expected dict. Using empty dict.",
-                file=sys.stderr,
-            )
+            logger.warning(f"Theme is {type(theme)}, expected dict. Using empty dict.")
             theme = {}
 
         font_name = theme.get("font", "Calibri")
         if not isinstance(font_name, str):
-            print(
-                f"[exporter] Warning: font is {type(font_name)}, expected str. Using 'Calibri'.",
-                file=sys.stderr,
-            )
+            logger.warning(f"Font is {type(font_name)}, expected str. Using 'Calibri'.")
             font_name = "Calibri"
 
         # Parse color if provided
@@ -107,20 +101,14 @@ def export_slides(input_path: str, output_path: str):
                         int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16)
                     )
                 except Exception as e:
-                    print(f"[exporter] Color parsing failed: {e}", file=sys.stderr)
+                    logger.warning(f"Color parsing failed: {e}")
             else:
-                print(
-                    f"[exporter] Warning: color is {type(color_value)}, expected str",
-                    file=sys.stderr,
-                )
+                logger.warning(f"Color is {type(color_value)}, expected str")
 
         # Get title - SAFE EXTRACTION
         title_text = s.get("title", f"Slide {slide_index + 1}")
         if not isinstance(title_text, str):
-            print(
-                f"[exporter] Warning: title is {type(title_text)}, converting to str",
-                file=sys.stderr,
-            )
+            logger.warning(f"Title is {type(title_text)}, converting to str")
             title_text = str(title_text)
 
         # Add title as a text box at the top
@@ -164,10 +152,7 @@ def export_slides(input_path: str, output_path: str):
         # Get summary - SAFE EXTRACTION
         summary = s.get("summary", "")
         if not isinstance(summary, str):
-            print(
-                f"[exporter] Warning: summary is {type(summary)}, converting to str",
-                file=sys.stderr,
-            )
+            logger.warning(f"Summary is {type(summary)}, converting to str")
             summary = str(summary) if summary else ""
         summary = summary.strip()
 
@@ -193,9 +178,8 @@ def export_slides(input_path: str, output_path: str):
         # Get bullets - SAFE EXTRACTION
         bullets = s.get("bullets", [])
         if not isinstance(bullets, list):
-            print(
-                f"[exporter] Warning: bullets is {type(bullets)}, expected list. Converting.",
-                file=sys.stderr,
+            logger.warning(
+                f"Warning: bullets is {type(bullets)}, expected list. Converting.",
             )
             if isinstance(bullets, str):
                 # If it's a string, split by newlines or use as single item
@@ -207,9 +191,8 @@ def export_slides(input_path: str, output_path: str):
         for i, bullet_item in enumerate(bullets):
             # Ensure bullet is a string
             if not isinstance(bullet_item, str):
-                print(
-                    f"[exporter] Warning: bullet {i} is {type(bullet_item)}, converting to str",
-                    file=sys.stderr,
+                logger.warning(
+                    f"Warning: bullet {i} is {type(bullet_item)}, converting to str"
                 )
                 bullet_text = str(bullet_item)
             else:
@@ -241,9 +224,8 @@ def export_slides(input_path: str, output_path: str):
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
         if not isinstance(notes, str):
-            print(
-                f"[exporter] Warning: notes is {type(notes)}, converting to str",
-                file=sys.stderr,
+            logger.warning(
+                f"Warning: notes is {type(notes)}, converting to str"
             )
             notes = str(notes) if notes else ""
         notes = notes.strip()
@@ -258,9 +240,8 @@ def export_slides(input_path: str, output_path: str):
         image_path = s.get("image_path")
         image_prompt = s.get("image_prompt", "")
         if not isinstance(image_prompt, str):
-            print(
-                f"[exporter] Warning: image_prompt is {type(image_prompt)}, converting to str",
-                file=sys.stderr,
+            logger.warning(
+                f"Warning: image_prompt is {type(image_prompt)}, converting to str"
             )
             image_prompt = str(image_prompt) if image_prompt else ""
         image_prompt = image_prompt.strip()
@@ -280,16 +261,10 @@ def export_slides(input_path: str, output_path: str):
                         if hasattr(pic, "alt_text"):
                             pic.alt_text = image_prompt
                     except Exception as e:
-                        print(
-                            f"[exporter] Alt text assignment failed: {e}",
-                            file=sys.stderr,
-                        )
+                        logger.warning(f"Alt text assignment failed: {e}")
 
             except Exception as e:
-                print(
-                    f"[exporter] Image insert failed: {e}. Using placeholder.",
-                    file=sys.stderr,
-                )
+                logger.warning(f"Image insert failed: {e}. Using placeholder.")
                 if image_prompt:
                     left = Inches(7)
                     top = Inches(1.5)
@@ -319,4 +294,4 @@ def export_slides(input_path: str, output_path: str):
             p.alignment = PP_ALIGN.CENTER
 
     prs.save(output_path)
-    print(f"[exporter] Exported slides to {output_path}", file=sys.stderr)
+    logger.info(f"Exported slides to {output_path}")

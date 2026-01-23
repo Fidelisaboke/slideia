@@ -3,19 +3,22 @@
 import hashlib
 import json
 import os
-import sys
 from copy import deepcopy
 from datetime import datetime, timedelta
 
 import redis
 from dotenv import load_dotenv
+from slideia.core.logging import get_logger
 
 load_dotenv()
 
 
+logger = get_logger(__name__)
+
+
 class RedisCache:
     """
-    Redis-backed cache wth TTL.
+    Redis-backed cache with TTL.
     This implementation is used in production.
     """
 
@@ -40,13 +43,13 @@ class RedisCache:
         try:
             value = self._client.get(key)
             if value is None:
-                print(f"[REDIS] MISS {key[:12]}...", file=sys.stderr)
+                logger.info(f"MISS {key[:12]}...")
                 return None
 
-            print(f"[REDIS] HIT {key[:12]}...", file=sys.stderr)
+            logger.info(f"HIT {key[:12]}...")
             return json.loads(value)
         except (redis.exceptions.RedisError, json.JSONDecodeError) as e:
-            print(f"[REDIS] GET Error for key {key[:12]}...: {e}", file=sys.stderr)
+            logger.error(f"GET Error for key {key[:12]}...: {e}")
             return None
 
     def set(
@@ -66,17 +69,16 @@ class RedisCache:
                 json.dumps(data),
             )
 
-            print(
-                f"[REDIS] SET {key[:12]}... (ttl={self._ttl_seconds}s)",
-                file=sys.stderr,
+            logger.info(
+                f"SET {key[:12]}... (ttl={self._ttl_seconds}s)"
             )
         except redis.exceptions.RedisError as e:
-            print(f"[REDIS] SET Error for key {key[:12]}...: {e}", file=sys.stderr)
+            logger.error(f"SET Error for key {key[:12]}...: {e}")
 
     def clear(self):
         for key in self._client.scan_iter(match="deck:*"):
-            self._cleint.delete(key)
-        print("[REDIS] CLEARED cache keys", file=sys.stderr)
+            self._client.delete(key)
+        logger.info("CLEARED cache keys")
 
 
 class Cache:
@@ -105,13 +107,13 @@ class Cache:
         if key in self._cache:
             data, expiry = self._cache[key]
             if datetime.now() < expiry:
-                print(f"[CACHE] HIT for key {key[:8]}...", file=sys.stderr)
+                logger.info(f"HIT for key {key[:8]}...")
                 return deepcopy(data)
             else:
-                print(f"[CACHE] EXPIRED for key {key[:8]}...", file=sys.stderr)
+                logger.info(f"EXPIRED for key {key[:8]}...")
                 del self._cache[key]
 
-        print(f"[CACHE] MISS for key {key[:8]}...", file=sys.stderr)
+        logger.info(f"MISS for key {key[:8]}...")
         return None
 
     def set(self, topic: str, audience: str, tone: str, slide_count: int, data: dict):
@@ -119,12 +121,11 @@ class Cache:
         key = self._generate_key(topic, audience, tone, slide_count)
         expiry = datetime.now() + timedelta(minutes=self._ttl_minutes)
         self._cache[key] = (data, expiry)
-        print(
-            f"[CACHE] SET for key {key[:8]}... (expires in {self._ttl_minutes}m)",
-            file=sys.stderr,
+        logger.info(
+            f"SET for key {key[:8]}... (expires in {self._ttl_minutes}m)",
         )
 
     def clear(self):
         """Clear all cached data."""
         self._cache.clear()
-        print("[CACHE] CLEARED", file=sys.stderr)
+        logger.info("CLEARED cache keys")

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     CACHE_TTL_SECONDS: int = 3600
     DOWNLOADS_DIR: Path = DOWNLOADS_DIR
+    LOG_LEVEL: str = "INFO"
 
     model_config = ConfigDict(
         env_file=ENV_FILE, env_file_encoding="utf-8", case_sensitive=True

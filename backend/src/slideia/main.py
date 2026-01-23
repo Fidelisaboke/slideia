@@ -11,8 +11,11 @@ from fastapi.staticfiles import StaticFiles
 
 from slideia.api.routes import router as api_router
 from slideia.core.config import settings
+from slideia.core.logging import setup_logging
 
 load_dotenv()
+
+setup_logging()
 
 app = FastAPI(title="slideia API", version="0.4.0")
 

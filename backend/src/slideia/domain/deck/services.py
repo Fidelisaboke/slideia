@@ -1,9 +1,10 @@
-import sys
-
 from pptx import Presentation
+from slideia.core.logging import get_logger
 from slideia.domain.deck.models import Deck, Slide
 from slideia.infra.cache import Cache, RedisCache
 from slideia.infra.openrouter import OpenRouterLLM
+
+logger = get_logger(__name__)
 
 
 def create_minimal_template(path: str):
@@ -49,7 +50,7 @@ def generate_full_deck(
             slides=[Slide(**s) for s in cached.get("slides", [])],
         )
 
-    print("[generate_full_deck] Generating new deck", file=sys.stderr)
+    logger.info("Generating new deck...")
 
     outline = llm.propose_outline(
         topic=topic,
@@ -62,12 +63,17 @@ def generate_full_deck(
     for slide_spec in outline.get("slides", []):
         slides_content.append(llm.draft_slide(slide_spec))
 
+    logger.info(f"Slides content: {slides_content}")
+
+    logger.info("Deck generation complete!")
     result = {
         "outline": outline,
         "slides": slides_content,
     }
 
     cache.set(topic, audience, tone, slide_count, result)
+    logger.info("Cached the generated deck.")
+
     return Deck(
         outline=outline,
         slides=[Slide(**s) for s in slides_content],
