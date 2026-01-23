@@ -2,6 +2,7 @@
 Pytest fixtures for slideia tests.
 Provides reusable temp directory and sample JSON deck input.
 """
+
 import json
 import pytest
 
@@ -24,15 +25,15 @@ def sample_deck_json(tmp_path):
                 "summary": "Why accessibility matters.",
                 "bullets": ["Legal requirements", "User experience"],
                 "image_prompt": "A person using a screen reader",
-                "theme": {"font": "Arial", "color": "#003366"}
+                "theme": {"font": "Arial", "color": "#003366"},
             },
             {
                 "title": "Best Practices",
                 "summary": "How to make slides accessible.",
                 "bullets": ["Alt text for images", "High contrast colors"],
-                "theme": {"font": "Calibri", "color": "#222222"}
-            }
-        ]
+                "theme": {"font": "Calibri", "color": "#222222"},
+            },
+        ],
     }
     path = tmp_path / "deck.json"
     with open(path, "w", encoding="utf-8") as f:
