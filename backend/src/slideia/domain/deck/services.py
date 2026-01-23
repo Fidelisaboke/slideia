@@ -2,17 +2,18 @@ import os
 import sys
 
 from pptx import Presentation
+from slideia.core.config import settings
 from slideia.domain.deck.models import Deck, Slide
 from slideia.infra.cache import Cache, RedisCache
 from slideia.infra.openrouter import OpenRouterLLM
 
-if os.getenv("ENV") == "test":
+if settings.ENV == "test":
     cache = Cache()
 else:
     cache = RedisCache()
 
 llm = OpenRouterLLM(
-    api_key=os.getenv("OPENROUTER_API_KEY"), model=os.getenv("OPENROUTER_MODEL")
+    api_key=settings.OPENROUTER_API_KEY, model=settings.OPENROUTER_MODEL
 )
 
 
