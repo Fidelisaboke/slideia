@@ -1,20 +1,9 @@
-import os
 import sys
 
 from pptx import Presentation
-from slideia.core.config import settings
 from slideia.domain.deck.models import Deck, Slide
 from slideia.infra.cache import Cache, RedisCache
 from slideia.infra.openrouter import OpenRouterLLM
-
-if settings.ENV == "test":
-    cache = Cache()
-else:
-    cache = RedisCache()
-
-llm = OpenRouterLLM(
-    api_key=settings.OPENROUTER_API_KEY, model=settings.OPENROUTER_MODEL
-)
 
 
 def create_minimal_template(path: str):
@@ -50,6 +39,8 @@ def generate_full_deck(
     audience: str,
     tone: str,
     slide_count: int,
+    llm: OpenRouterLLM,
+    cache: Cache | RedisCache,
 ) -> Deck:
     cached = cache.get(topic, audience, tone, slide_count)
     if cached:
