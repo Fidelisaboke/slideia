@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          uv sync --group dev --group test
+          uv sync --locked --group dev --group test
 
       - name: Install backend project in editable mode
         run: |
@@ -91,7 +91,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          pnpm install
+          pnpm install --frozen-lockfile
 
       - name: Build frontend
         run: |
