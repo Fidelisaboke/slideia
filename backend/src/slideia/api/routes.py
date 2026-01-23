@@ -11,6 +11,7 @@ from slideia.core.config import settings
 
 router = APIRouter()
 
+
 @router.post("/propose-outline")
 def generate_outline(request: ProposeOutlineRequest) -> dict:
     """
