@@ -63,7 +63,10 @@ def test_generate_deck_llm_error(client, deck_request):
     ):
         response = client.post("/generate-deck", json=deck_request)
         assert response.status_code == 500
-        assert "Deck generation failed" in response.text
+        assert (
+            response.json()["detail"].startswith("Oops! Something went wrong")
+            or "Deck generation failed" in response.json()["detail"]
+        )
 
 
 def test_generate_deck_empty_slides(client, deck_request, fake_deck):

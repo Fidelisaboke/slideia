@@ -113,7 +113,7 @@ def test_export_pptx_llm_error(client, deck_request):
         mock_settings.DOWNLOADS_DIR = tempfile.gettempdir()
         response = client.post("/export-pptx", json=deck_request)
         assert response.status_code == 500
-        assert "PPTX export failed" in response.text
+        assert response.json()["detail"].startswith("Oops! Something went wrong")
 
 
 def test_export_pptx_export_error(client, deck_request, fake_deck):
@@ -126,7 +126,7 @@ def test_export_pptx_export_error(client, deck_request, fake_deck):
         mock_settings.DOWNLOADS_DIR = tempfile.gettempdir()
         response = client.post("/export-pptx", json=deck_request)
         assert response.status_code == 500
-        assert "PPTX export failed" in response.text
+        assert response.json()["detail"].startswith("Oops! Something went wrong")
 
 
 def test_export_pptx_empty_slides(client, deck_request, fake_deck, tmp_path):

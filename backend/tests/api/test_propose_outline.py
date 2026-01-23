@@ -71,7 +71,7 @@ def test_propose_outline_llm_error(client, outline_request):
     ):
         response = client.post("/propose-outline", json=outline_request)
         assert response.status_code == 500
-        assert "Outline generation failed" in response.text
+        assert response.json()["detail"].startswith("Oops! Something went wrong")
 
 
 def test_propose_outline_empty_slides(client, outline_request, fake_deck):
