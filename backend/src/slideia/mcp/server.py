@@ -5,26 +5,26 @@ Exposes slide generation MCP tools.
 
 from mcp.server.fastmcp import FastMCP
 
-from slideia.llm import draft_slide, propose_outline
-from slideia.tools.exporter import generate_pptx
+from slideia.infra.openrouter import OpenRouterLLM
+from slideia.domain.deck.exporter import export_slides
 
 mcp = FastMCP(name="slideia")
+llm = OpenRouterLLM()
 
 
 @mcp.tool()
-def generate_pptx_tool(topic: str, slides: int = 5) -> str:
+def generate_pptx_tool(input_path: str, output_path: str) -> str:
     """
-    MCP tool wrapper for generate_pptx.
+    Generate a PowerPoint file from a JSON slide deck specification.
     Args:
-        topic (str): The topic/title for the presentation.
-        slides (int, optional): Number of content slides to generate. Defaults to 5.
+        input_path (str): Path to input JSON file with slide deck specification
+        output_path (str): Path to output PowerPoint file
     Returns:
-        str: The filename of the generated .pptx deck.
+        str: Path to generated PowerPoint file
     """
-    return generate_pptx(topic, slides)
+    return export_slides(input_path, output_path)
 
 
-# MCP tool: Generate a slide outline using LLM APIs
 @mcp.tool()
 def propose_outline_tool(topic: str, audience: str, tone: str, slides_count: int):
     """
@@ -37,10 +37,9 @@ def propose_outline_tool(topic: str, audience: str, tone: str, slides_count: int
     Returns:
         dict: Outline with title, slides, and optional citations
     """
-    return propose_outline(topic, audience, tone, slides_count)
+    return llm.propose_outline(topic, audience, tone, slides_count)
 
 
-# MCP tool: Draft a single slide using LLM APIs
 @mcp.tool()
 def draft_slide_tool(slide_spec: dict):
     """
@@ -50,7 +49,7 @@ def draft_slide_tool(slide_spec: dict):
     Returns:
         dict: Drafted slide content (bullets, notes, image_prompt, theme)
     """
-    return draft_slide(slide_spec)
+    return llm.draft_slide(slide_spec)
 
 
 if __name__ == "__main__":

@@ -1,111 +1,18 @@
-"""
-FastAPI app exposing LLM generation endpoints for slideia.
-"""
-
 import json
 import os
 import sys
 import tempfile
-from pathlib import Path
 
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from slideia.api.schemas import DeckRequest, ProposeOutlineRequest
+from slideia.domain.deck.exporter import export_slides
+from slideia.domain.deck.services import generate_full_deck
+from slideia.core.config import settings
 
-from slideia.llm import draft_slide, propose_outline
-from slideia.tools.exporter import export_slides
-from slideia.utils.cache import RedisCache, Cache
+router = APIRouter()
 
-load_dotenv()
-
-if os.getenv("ENV") == "test":
-    # Use the custom in-memory cache for tests
-    cache = Cache()
-else:
-    cache = RedisCache()
-
-app = FastAPI(title="slideia API", version="0.3.0")
-
-# CORS Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[os.getenv("NEXT_FRONTEND_URL", "")],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Directory to store generated files
-# Use absolute path relative to the src directory
-DOWNLOADS_DIR = Path(__file__).parent.parent / "downloads"
-DOWNLOADS_DIR.mkdir(exist_ok=True)
-
-# Mount the downloads directory
-app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
-
-
-class ProposeOutlineRequest(BaseModel):
-    topic: str
-    audience: str
-    tone: str
-    slide_count: int
-
-
-class DeckRequest(BaseModel):
-    topic: str
-    audience: str
-    tone: str
-    slide_count: int
-
-
-def generate_full_deck(topic: str, audience: str, tone: str, slide_count: int) -> dict:
-    """
-    Generate complete deck with caching.
-
-    Returns:
-        {
-            "outline": {...},
-            "slides": [...]
-        }
-    """
-    # Check cache first
-    cached = cache.get(topic, audience, tone, slide_count)
-    if cached:
-        return cached
-
-    print("[generate_full_deck] Generating new deck (not in cache)", file=sys.stderr)
-
-    # Generate outline
-    outline = propose_outline(
-        topic=topic,
-        audience=audience,
-        tone=tone,
-        slide_count=slide_count,
-    )
-
-    # Draft all slides
-    slides_content = []
-    for i, slide_spec in enumerate(outline.get("slides", [])):
-        print(
-            f"[generate_full_deck] Drafting slide {i + 1}/{len(outline.get('slides', []))}",
-            file=sys.stderr,
-        )
-        slide_content = draft_slide(slide_spec)
-        slides_content.append(slide_content)
-
-    # Prepare result
-    result = {"outline": outline, "slides": slides_content}
-
-    # Cache it
-    cache.set(topic, audience, tone, slide_count, result)
-
-    return result
-
-
-# POST /propose-outline: Propose a slide outline
-@app.post("/propose-outline")
-def generate_outline(request: ProposeOutlineRequest):
+@router.post("/propose-outline")
+def generate_outline(request: ProposeOutlineRequest) -> dict:
     """
     Propose a slide outline for a presentation.
 
@@ -132,7 +39,7 @@ def generate_outline(request: ProposeOutlineRequest):
 
 
 # POST /generate-deck: Generate a full slide deck (outline + drafted slides)
-@app.post("/generate-deck")
+@router.post("/generate-deck")
 def generate_deck(request: DeckRequest):
     """
     Generate a full slide deck by first proposing an outline and then drafting each slide.
@@ -162,7 +69,7 @@ def generate_deck(request: DeckRequest):
 
 
 # POST: /export-pptx: Export deck to a PowerPoint file
-@app.post("/export-pptx")
+@router.post("/export-pptx")
 def export_pptx(request: DeckRequest):
     """
     Export a slide deck to a PowerPoint (.pptx) file.
@@ -227,7 +134,7 @@ def export_pptx(request: DeckRequest):
             safe_topic = "presentation"
 
         output_filename = f"{safe_topic}.pptx"
-        output_path = DOWNLOADS_DIR / output_filename
+        output_path = settings.DOWNLOADS_DIR / output_filename
 
         # Export to PPTX
         print(f"[export-pptx] Exporting to {output_path}", file=sys.stderr)
@@ -254,14 +161,14 @@ def export_pptx(request: DeckRequest):
 
 
 # GET /health: Health check endpoint
-@app.get("/health")
+@router.get("/health")
 def health_check():
     """Health check endpoint."""
-    files = list(DOWNLOADS_DIR.glob("*.pptx"))
+    files = list(settings.DOWNLOADS_DIR.glob("*.pptx"))
     return {
         "status": "ok",
-        "downloads_dir": str(DOWNLOADS_DIR),
-        "downloads_exists": DOWNLOADS_DIR.exists(),
+        "downloads_dir": str(settings.DOWNLOADS_DIR),
+        "downloads_exists": settings.DOWNLOADS_DIR.exists(),
         "pptx_files": [f.name for f in files],
         "file_count": len(files),
     }
