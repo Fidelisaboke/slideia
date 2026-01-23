@@ -1,0 +1,5 @@
+{
+  "name": "slideia",
+  "description": "A Python MCP Server for slideia.",
+  "entry_point": "server.py"
+}
