@@ -2,7 +2,7 @@ import os
 import sys
 
 from pptx import Presentation
-from slideia.domain.deck.models import Deck
+from slideia.domain.deck.models import Deck, Slide
 from slideia.infra.cache import Cache, RedisCache
 from slideia.infra.openrouter import OpenRouterLLM
 
@@ -52,7 +52,10 @@ def generate_full_deck(
 ) -> Deck:
     cached = cache.get(topic, audience, tone, slide_count)
     if cached:
-        return cached
+        return Deck(
+            outline=cached.get("outline", {}),
+            slides=[Slide(**s) for s in cached.get("slides", [])],
+        )
 
     print("[generate_full_deck] Generating new deck", file=sys.stderr)
 
@@ -73,4 +76,7 @@ def generate_full_deck(
     }
 
     cache.set(topic, audience, tone, slide_count, result)
-    return result
+    return Deck(
+        outline=outline,
+        slides=[Slide(**s) for s in slides_content],
+    )
