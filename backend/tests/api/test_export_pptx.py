@@ -1,10 +1,7 @@
-# pytest and FastAPI TestClient for API testing
 import tempfile
 from unittest.mock import patch
 
 import pytest
-
-# Use a FastAPI app for testing
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from slideia.api.routes import router
@@ -30,29 +27,53 @@ def deck_request():
 
 @pytest.fixture
 def fake_deck():
-    return {
-        "outline": {
-            "title": "Accessibility in AI",
-            "slides": [
-                {"title": "Intro", "summary": "Why it matters."},
-                {"title": "Best Practices", "summary": "How to do it."},
-            ],
-        },
-        "slides": [
-            {
-                "bullets": ["Point 1"],
-                "notes": "Note 1",
-                "image_prompt": "Prompt 1",
-                "theme": {"font": "Arial", "color": "#003366"},
-            },
-            {
-                "bullets": ["Point 2"],
-                "notes": "Note 2",
-                "image_prompt": "Prompt 2",
-                "theme": {"font": "Calibri", "color": "#222222"},
-            },
-        ],
-    }
+    class FakeSlide:
+        def __init__(self, bullets, notes, image_prompt, theme):
+            self.bullets = bullets
+            self.notes = notes
+            self.image_prompt = image_prompt
+            self.theme = theme
+
+    class FakeDeck:
+        def __init__(self):
+            self.outline = {
+                "title": "Accessibility in AI",
+                "slides": [
+                    {"title": "Intro", "summary": "Why it matters."},
+                    {"title": "Best Practices", "summary": "How to do it."},
+                ],
+            }
+            self.slides = [
+                FakeSlide(
+                    ["Point 1"],
+                    "Note 1",
+                    "Prompt 1",
+                    {"font": "Arial", "color": "#003366"},
+                ),
+                FakeSlide(
+                    ["Point 2"],
+                    "Note 2",
+                    "Prompt 2",
+                    {"font": "Calibri", "color": "#222222"},
+                ),
+            ]
+
+        def to_dict(self):
+            # For compatibility, return dicts for slides
+            return {
+                "outline": self.outline,
+                "slides": [
+                    {
+                        "bullets": s.bullets,
+                        "notes": s.notes,
+                        "image_prompt": s.image_prompt,
+                        "theme": s.theme,
+                    }
+                    for s in self.slides
+                ],
+            }
+
+    return FakeDeck()
 
 
 def test_export_pptx_success(client, deck_request, fake_deck, tmp_path):
@@ -110,8 +131,8 @@ def test_export_pptx_export_error(client, deck_request, fake_deck):
 
 def test_export_pptx_empty_slides(client, deck_request, fake_deck, tmp_path):
     """Test export with empty slides list."""
-    fake_deck["outline"]["slides"] = []
-    fake_deck["slides"] = []
+    fake_deck.outline["slides"] = []
+    fake_deck.slides = []
     with (
         patch("slideia.api.routes.generate_full_deck", return_value=fake_deck),
         patch("slideia.api.routes.export_slides") as mock_export,
@@ -130,7 +151,7 @@ def test_export_pptx_special_characters_topic(
 ):
     """Test topic with special characters is sanitized in filename."""
     deck_request["topic"] = "AI: The Future? *Yes!*"
-    fake_deck["outline"]["title"] = deck_request["topic"]
+    fake_deck.outline["title"] = deck_request["topic"]
     with (
         patch("slideia.api.routes.generate_full_deck", return_value=fake_deck),
         patch("slideia.api.routes.export_slides") as mock_export,

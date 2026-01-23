@@ -26,19 +26,21 @@ def outline_request():
 
 @pytest.fixture
 def fake_deck():
-    return {
-        "outline": {
-            "title": "Accessibility in AI",
-            "slides": [
-                {"title": "Intro", "summary": "Why it matters."},
-                {"title": "Best Practices", "summary": "How to do it."},
-            ],
-        },
-        "slides": [
-            {"bullets": ["Point 1"]},
-            {"bullets": ["Point 2"]},
-        ],
-    }
+    class FakeDeck:
+        def __init__(self):
+            self.outline = {
+                "title": "Accessibility in AI",
+                "slides": [
+                    {"title": "Intro", "summary": "Why it matters."},
+                    {"title": "Best Practices", "summary": "How to do it."},
+                ],
+            }
+            self.slides = [
+                {"bullets": ["Point 1"]},
+                {"bullets": ["Point 2"]},
+            ]
+
+    return FakeDeck()
 
 
 def test_propose_outline_success(client, outline_request, fake_deck):
@@ -74,7 +76,7 @@ def test_propose_outline_llm_error(client, outline_request):
 
 def test_propose_outline_empty_slides(client, outline_request, fake_deck):
     """Test outline with empty slides list."""
-    fake_deck["outline"]["slides"] = []
+    fake_deck.outline["slides"] = []
     with patch("slideia.api.routes.generate_full_deck", return_value=fake_deck):
         response = client.post("/propose-outline", json=outline_request)
         assert response.status_code == 200
@@ -85,7 +87,7 @@ def test_propose_outline_empty_slides(client, outline_request, fake_deck):
 def test_propose_outline_special_characters(client, outline_request, fake_deck):
     """Test topic with special characters is accepted."""
     outline_request["topic"] = "AI: The Future? *Yes!*"
-    fake_deck["outline"]["title"] = outline_request["topic"]
+    fake_deck.outline["title"] = outline_request["topic"]
     with patch("slideia.api.routes.generate_full_deck", return_value=fake_deck):
         response = client.post("/propose-outline", json=outline_request)
         assert response.status_code == 200
