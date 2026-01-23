@@ -223,9 +223,7 @@ def export_slides(input_path: str, output_path: str):
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
         if not isinstance(notes, str):
-            logger.warning(
-                f"Warning: notes is {type(notes)}, converting to str"
-            )
+            logger.warning(f"Warning: notes is {type(notes)}, converting to str")
             notes = str(notes) if notes else ""
         notes = notes.strip()
 

@@ -69,9 +69,7 @@ class RedisCache:
                 json.dumps(data),
             )
 
-            logger.info(
-                f"SET {key[:12]}... (ttl={self._ttl_seconds}s)"
-            )
+            logger.info(f"SET {key[:12]}... (ttl={self._ttl_seconds}s)")
         except redis.exceptions.RedisError as e:
             logger.error(f"SET Error for key {key[:12]}...: {e}")
 
