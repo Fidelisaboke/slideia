@@ -25,6 +25,7 @@ app.add_middleware(
 )
 
 # Mount the downloads directory
+settings.DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount(
     "/api/v1/downloads",
     StaticFiles(directory=str(settings.DOWNLOADS_DIR)),
