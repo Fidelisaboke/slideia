@@ -78,7 +78,9 @@ jobs:
           cache-dependency-path: "frontend/pnpm-lock.yaml"
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: | 
+          npm install -g pnpm
+          echo "$(npm bin -g)" >> $GITHUB_PATH
 
       - name: Install frontend dependencies
         run: |
