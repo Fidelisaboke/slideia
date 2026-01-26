@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import tempfile
@@ -8,6 +9,7 @@ from slideia.core.config import settings
 from slideia.core.logging import get_logger
 from slideia.domain.deck.exporter import export_slides
 from slideia.domain.deck.services import Cache, RedisCache, generate_full_deck
+from slideia.infra.image_fetcher import ImageFetcher
 from slideia.infra.openrouter import OpenRouterLLM
 
 logger = get_logger(__name__)
@@ -65,7 +67,6 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
         )
 
 
-# POST /generate-deck: Generate a full slide deck (outline + drafted slides)
 @router.post("/generate-deck")
 def generate_deck(request: DeckRequest):
     """
@@ -107,9 +108,8 @@ def generate_deck(request: DeckRequest):
         )
 
 
-# POST: /export-pptx: Export deck to a PowerPoint file
 @router.post("/export-pptx")
-def export_pptx(request: DeckRequest):
+async def export_pptx(request: DeckRequest):
     """
     Export a slide deck to a PowerPoint (.pptx) file.
 
@@ -139,6 +139,17 @@ def export_pptx(request: DeckRequest):
         outline = deck.outline
         slides_content = deck.slides
 
+        logger.info("Fetching images...")
+        image_fetcher = ImageFetcher()
+
+        # Create a list of async tasks
+        tasks = []
+        for slide in slides_content:
+            tasks.append(image_fetcher.fetch_image_url(slide.image_prompt))
+
+        # Run tasks concurrently
+        image_urls = await asyncio.gather(*tasks)
+
         logger.info(f"Using deck with {len(slides_content)} slides")
 
         # Prepare data for export
@@ -154,6 +165,7 @@ def export_pptx(request: DeckRequest):
                 "summary": slide_spec.get("summary", ""),
                 "bullets": slides_content[i].bullets,
                 "image_prompt": slides_content[i].image_prompt,
+                "image_url": image_urls[i],
                 "notes": slides_content[i].notes,
                 "theme": slides_content[i].theme,
             }
@@ -204,7 +216,6 @@ def export_pptx(request: DeckRequest):
                 logger.debug(f"Failed to clean up temporary file: {json_path}")
 
 
-# GET /health: Health check endpoint
 @router.get("/health")
 def health_check():
     """Health check endpoint."""

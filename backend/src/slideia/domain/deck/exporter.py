@@ -4,7 +4,9 @@ Exporter module for the slideia package.
 
 import json
 import os
+from io import BytesIO
 
+import requests
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
@@ -242,55 +244,64 @@ def export_slides(input_path: str, output_path: str):
             notes_frame = notes_slide.notes_text_frame
             notes_frame.text = notes
 
-        # Get image prompt - SAFE EXTRACTION
+        # Image handling
         image_path = s.get("image_path")
+        image_url = s.get("image_url")
         image_prompt = s.get("image_prompt", "")
+
         if not isinstance(image_prompt, str):
-            logger.warning(
-                f"Warning: image_prompt is {type(image_prompt)}, converting to str"
-            )
             image_prompt = str(image_prompt) if image_prompt else ""
         image_prompt = image_prompt.strip()
 
-        # Insert image on the right side
-        if image_path and os.path.exists(image_path):
+        # Image dimensions and position
+        img_left = Inches(7)
+        img_top = Inches(1.5)
+        img_width = Inches(2.5)
+
+        pic = None
+
+        # Try to fetch image URL first
+        if image_url:
             try:
-                left = Inches(7)
-                top = Inches(1.5)
-                width = Inches(2.5)
-                pic = content_slide.shapes.add_picture(
-                    image_path, left, top, width=width
-                )
-
-                if pic and image_prompt:
-                    try:
-                        if hasattr(pic, "alt_text"):
-                            pic.alt_text = image_prompt
-                    except Exception as e:
-                        logger.warning(f"Alt text assignment failed: {e}")
-
+                logger.info(f"Downloading image from {image_url}...")
+                response = requests.get(image_url, timeout=5)
+                if response.status_code == 200:
+                    image_stream = BytesIO(response.content)
+                    pic = content_slide.shapes.add_picture(
+                        image_stream, img_left, img_top, width=img_width
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to download image: status {response.status_code}"
+                    )
             except Exception as e:
-                logger.warning(f"Image insert failed: {e}. Using placeholder.")
-                if image_prompt:
-                    left = Inches(7)
-                    top = Inches(1.5)
-                    width = Inches(2.5)
-                    height = Inches(2)
-                    textbox = content_slide.shapes.add_textbox(left, top, width, height)
-                    textbox_frame = textbox.text_frame
-                    textbox_frame.text = f"[Image: {image_prompt}]"
-                    textbox_frame.word_wrap = True
-                    p = textbox_frame.paragraphs[0]
-                    p.font.size = Pt(10)
-                    p.font.italic = True
-                    p.alignment = PP_ALIGN.CENTER
+                logger.warning(f"Error downloading image: {e}")
 
-        elif image_prompt:
-            left = Inches(7)
-            top = Inches(1.5)
-            width = Inches(2.5)
+        # If no URL or download failed, try local path
+        if not pic and image_path and os.path.exists(image_path):
+            try:
+                pic = content_slide.shapes.add_picture(
+                    image_path, img_left, img_top, width=img_width
+                )
+            except Exception as e:
+                logger.warning(f"Image insert failed: {e}")
+
+        # Add alt text if picture was created
+        if pic and image_prompt:
+            try:
+                if hasattr(pic, "alt_text"):
+                    pic.alt_text = image_prompt
+            except Exception as e:
+                logger.warning(f"Alt text assignment failed: {e}")
+
+        # Fallback: if no picture was created, create a placeholder box
+        if not pic and image_prompt:
+            logger.info("Using placeholder shape for image.")
             height = Inches(2)
-            textbox = content_slide.shapes.add_textbox(left, top, width, height)
+            textbox = content_slide.shapes.add_textbox(
+                img_left, img_top, img_width, height
+            )
+
             textbox_frame = textbox.text_frame
             textbox_frame.text = f"[Image: {image_prompt}]"
             textbox_frame.word_wrap = True
