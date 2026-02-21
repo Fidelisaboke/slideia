@@ -6,7 +6,7 @@ import json
 import os
 from io import BytesIO
 
-import requests
+import httpx
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
@@ -17,7 +17,7 @@ from slideia.domain.deck.services import create_minimal_template
 logger = get_logger(__name__)
 
 
-def export_slides(input_path: str, output_path: str):
+async def export_slides(input_path: str, output_path: str):
     """
     Export slides from a JSON file to a PowerPoint file.
     """
@@ -264,7 +264,8 @@ def export_slides(input_path: str, output_path: str):
         if image_url:
             try:
                 logger.info(f"Downloading image from {image_url}...")
-                response = requests.get(image_url, timeout=5)
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get(image_url)
                 if response.status_code == 200:
                     image_stream = BytesIO(response.content)
                     pic = content_slide.shapes.add_picture(
