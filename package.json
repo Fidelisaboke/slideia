@@ -10,7 +10,7 @@
     "format": "turbo run format"
   },
   "devDependencies": {
-    "turbo": "^2.8.20"
+    "turbo": "^2.9.4"
   },
   "packageManager": "pnpm@9.0.0"
 }
