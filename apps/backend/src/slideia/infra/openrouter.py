@@ -11,7 +11,9 @@ logger = get_logger(__name__)
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
-def _extract_json_from_markdown(text: str) -> str:
+def _extract_json_from_markdown(text: str | None) -> str:
+    if text is None:
+        return ""
     matches = re.findall(r"```json\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
     for match in matches:
         try:
@@ -44,8 +46,38 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         )
 
         response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"]
+        resp_json = response.json()
+
+        # Check for choices and message
+        choices = resp_json.get("choices")
+        if not choices or not choices[0].get("message"):
+            logger.error(f"Invalid OpenRouter response structure: {resp_json}")
+            raise ValueError(
+                "OpenRouter returned an empty or invalid response structure."
+            )
+
+        message = choices[0]["message"]
+        content = message.get("content")
+
+        if content is None:
+            # Check for refusals (OpenRouter specific)
+            refusal = message.get("refusal")
+            if refusal:
+                logger.error(f"Model refusal: {refusal}")
+                raise ValueError(f"Model refused request: {refusal}")
+
+            logger.error(
+                f"OpenRouter returned null content. Full response: {resp_json}"
+            )
+            raise ValueError(
+                "OpenRouter returned null content. The model may have refused the request or encountered an error."
+            )
+
         extracted = _extract_json_from_markdown(content)
+        if not extracted:
+            logger.error(f"Failed to extract JSON from: {content}")
+            raise ValueError("Failed to extract JSON from model response.")
+
         return json.loads(extracted)
 
     def propose_outline(
