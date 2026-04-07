@@ -9,7 +9,7 @@ class Settings(BaseSettings):
         env_file=ENV_FILE, env_file_encoding="utf-8", case_sensitive=True
     )
 
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
     NEXT_FRONTEND_URL: str = "http://localhost:3000"
     OPENROUTER_API_KEY: str
     OPENROUTER_MODEL: str = "xiaomi/mimo-v2-flash:free"
