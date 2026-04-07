@@ -14,7 +14,7 @@ llm = OpenRouterLLM(settings.OPENROUTER_API_KEY, settings.OPENROUTER_MODEL)
 
 
 @mcp.tool()
-def generate_pptx_tool(input_path: str, output_path: str) -> str:
+async def generate_pptx_tool(input_path: str, output_path: str) -> str:
     """
     Generate a PowerPoint file from a JSON slide deck specification.
     Args:
@@ -23,7 +23,8 @@ def generate_pptx_tool(input_path: str, output_path: str) -> str:
     Returns:
         str: Path to generated PowerPoint file
     """
-    return export_slides(input_path, output_path)
+    await export_slides(input_path, output_path)
+    return output_path
 
 
 @mcp.tool()
