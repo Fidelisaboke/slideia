@@ -1,0 +1,11 @@
+{
+  "name": "@slideia/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "PYTHONPATH=src uv run uvicorn slideia.main:app --reload",
+    "test": "PYTHONPATH=src uv run pytest --cov=slideia --cov-report=xml --cov-report=term-missing",
+    "lint": "uv run ruff check .",
+    "format": "uv run ruff format --check src tests"
+  }
+}
