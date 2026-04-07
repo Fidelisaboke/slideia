@@ -7,10 +7,8 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 
 import redis
-from dotenv import load_dotenv
 from slideia.core.logging import get_logger
-
-load_dotenv()
+from slideia.core.config import settings
 
 
 logger = get_logger(__name__)
@@ -23,11 +21,11 @@ class RedisCache:
     """
 
     def __init__(self):
-        redis_url = os.getenv("REDIS_URL")
+        redis_url = settings.REDIS_URL
         if not redis_url:
             raise RuntimeError("REDIS_URL is not set")
 
-        self._ttl_seconds = int(os.getenv("CACHE_TTL_MINUTES", "60")) * 60
+        self._ttl_seconds = settings.CACHE_TTL_SECONDS
         self._client = redis.from_url(redis_url, decode_responses=True)
 
     def _generate_key(

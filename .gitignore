@@ -62,3 +62,6 @@ build/
 # ------------------------
 tmp/
 temp/
+
+# Local caches
+.turbo/

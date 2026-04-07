@@ -14,8 +14,6 @@ from slideia.api.routes import router as api_router
 from slideia.core.config import settings
 from slideia.core.logging import setup_logging
 
-load_dotenv()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,7 +27,12 @@ app = FastAPI(title="slideia API", version="0.4.0", lifespan=lifespan)
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("NEXT_FRONTEND_URL", "")],
+    allow_origins=[
+        settings.NEXT_FRONTEND_URL,
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

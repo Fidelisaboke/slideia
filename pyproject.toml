@@ -1,0 +1,9 @@
+[project]
+name = "slideia-workspace"
+version = "0.1.0"
+description = "Slideia Python Workspace"
+authors = [{ name = "Fidelisaboke" }]
+requires-python = ">=3.8"
+
+[tool.uv.workspace]
+members = ["apps/backend"]

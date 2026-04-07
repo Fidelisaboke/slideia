@@ -7,13 +7,23 @@ on:
     branches: [ main ]
 
 jobs:
-  backend:
-    name: Backend (FastAPI)
+  build_test_lint:
+    name: Build, Lint, and Test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -23,78 +33,25 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Install dependencies
+      - name: Install Node dependencies
+        run: pnpm install
+
+      - name: Install Python dependencies
+        run: uv sync --all-packages --all-groups
+
+      - name: Load test environment variables from GitHub Secrets
         run: |
-          cd backend
-          uv sync --group dev --group test
+          
 
       - name: Install backend project in editable mode
-        run: |
-          cd backend
-          uv run pip install -e .
+        run: uv pip install -e apps/backend
 
-      - name: Load test environment variables
-        run: |
-          if [ -f backend/.env.test ]; then
-            echo "Loading environment variables from .env.test"
-            grep -vE '^\s*(#|$)' backend/.env.test >> $GITHUB_ENV
-            echo "Environment variables loaded successfully."
-          else
-            echo ".env.test file not found!"
-            exit 1
-          fi
-
-      - name: Lint with ruff
-        run: |
-          cd backend
-          uv run ruff check .
-
-      - name: Check formatting with ruff
-        run: |
-          cd backend
-          uv run ruff format --check src tests
-
-      - name: Run tests with pytest
-        run: |
-          cd backend
-          export PYTHONPATH=$PWD/src:$PYTHONPATH
-          uv run pytest --cov=slideia --cov-report=xml --cov-report=term-missing
+      - name: Run checks with Turbo
+        run: pnpm turbo run test lint build
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: backend/coverage.xml
-          fail_ci_if_error: true
-
-
-  frontend:
-    name: Frontend (Next.js)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          pnpm install
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          pnpm build
-
+          files: apps/backend/coverage.xml
+          fail_ci_if_error: false
