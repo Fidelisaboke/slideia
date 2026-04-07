@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       turbo:
-        specifier: latest
+        specifier: ^2.8.20
         version: 2.8.20
 
   apps/backend: {}
