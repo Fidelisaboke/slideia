@@ -2,10 +2,8 @@
 FastAPI app exposing LLM generation endpoints for slideia.
 """
 
-import os
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -22,7 +20,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="slideia API", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="slideia API", version="0.5.0", lifespan=lifespan)
 
 # CORS Configuration
 app.add_middleware(

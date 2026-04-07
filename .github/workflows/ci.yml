@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   build_test_lint:
@@ -22,8 +22,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -40,8 +38,7 @@ jobs:
         run: uv sync --all-packages --all-groups
 
       - name: Load test environment variables from GitHub Secrets
-        run: |
-          
+        run: echo "${{ secrets.BACKEND_ENV_TEST_FILE }}" > apps/backend/.env.test
 
       - name: Install backend project in editable mode
         run: uv pip install -e apps/backend

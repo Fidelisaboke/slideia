@@ -43,7 +43,7 @@ def setup_logging(
     root_logger.addHandler(console_handler)
 
     # File Handler - General logs (rotating)
-    if settings.ENV != "test":
+    if settings.ENVIRONMENT != "test":
         app_log_file = log_directory / "app.log"
         file_handler = RotatingFileHandler(
             app_log_file,
@@ -76,7 +76,7 @@ def setup_logging(
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-    logging.info(f"Logging configured: level={level}, env={settings.ENV}")
+    logging.info(f"Logging configured: level={level}, env={settings.ENVIRONMENT}")
 
 
 def get_logger(name: str) -> logging.Logger:
