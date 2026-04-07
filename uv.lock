@@ -83,7 +83,7 @@ wheels = [
 
 [[package]]
 name = "backend"
-version = "0.5.0"
+version = "0.5.1"
 source = { virtual = "apps/backend" }
 dependencies = [
     { name = "dotenv" },
@@ -1721,7 +1721,7 @@ wheels = [
 
 [[package]]
 name = "slideia-workspace"
-version = "0.5.0"
+version = "0.5.1"
 source = { virtual = "." }
 
 [[package]]
