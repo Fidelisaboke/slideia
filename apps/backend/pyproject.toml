@@ -1,7 +1,8 @@
 [project]
 name = "backend"
-version = "0.4.0"
-description = "Add your description here"
+version = "0.5.0"
+description = "Slideia Backend API"
+authors = [{ name = "Fidelisaboke" }]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

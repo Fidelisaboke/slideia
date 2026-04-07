@@ -4,7 +4,16 @@ Provides reusable temp directory and sample JSON deck input.
 """
 
 import json
+import os
+
 import pytest
+from dotenv import load_dotenv
+
+# Load test environment
+load_dotenv(".env.test", override=True)
+
+# Ensure environment is marked as test
+os.environ.setdefault("ENVIRONMENT", "test")
 
 
 @pytest.fixture

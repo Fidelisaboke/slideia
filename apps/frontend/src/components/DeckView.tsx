@@ -251,7 +251,7 @@ export default function DeckView({
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            💡 Tip: Click "Export to PowerPoint" to download your presentation as a .pptx file
+            💡 Tip: Click &quot;Export to PowerPoint&quot; to download your presentation as a .pptx file
           </p>
         </div>
       </div>
