@@ -65,8 +65,9 @@ def clean_templates():
         os.remove(template_path)
 
 
-def test_export_slides_creates_pptx(temp_json_file, temp_output_file, clean_templates):
-    export_slides(temp_json_file, temp_output_file)
+@pytest.mark.asyncio
+async def test_export_slides_creates_pptx(temp_json_file, temp_output_file, clean_templates):
+    await export_slides(temp_json_file, temp_output_file)
     assert os.path.exists(temp_output_file)
     prs = Presentation(temp_output_file)
     # Should have 3 slides: 1 title + 2 content
@@ -79,12 +80,14 @@ def test_export_slides_creates_pptx(temp_json_file, temp_output_file, clean_temp
     assert prs.slides[2].shapes[0].text_frame.text == "Slide 2"
 
 
-def test_export_slides_missing_input_raises(temp_output_file):
+@pytest.mark.asyncio
+async def test_export_slides_missing_input_raises(temp_output_file):
     with pytest.raises(FileNotFoundError):
-        export_slides("/nonexistent/file.json", temp_output_file)
+        await export_slides("/nonexistent/file.json", temp_output_file)
 
 
-def test_export_slides_missing_template_creates_it(
+@pytest.mark.asyncio
+async def test_export_slides_missing_template_creates_it(
     temp_json_file, temp_output_file, clean_templates
 ):
     # Remove template if exists
@@ -96,12 +99,13 @@ def test_export_slides_missing_template_creates_it(
     template_path = os.path.join(template_dir, "base_template.pptx")
     if os.path.exists(template_path):
         os.remove(template_path)
-    export_slides(temp_json_file, temp_output_file)
+    await export_slides(temp_json_file, temp_output_file)
     assert os.path.exists(template_path)
     assert os.path.exists(temp_output_file)
 
 
-def test_export_slides_handles_type_mismatches(temp_output_file, clean_templates):
+@pytest.mark.asyncio
+async def test_export_slides_handles_type_mismatches(temp_output_file, clean_templates):
     # theme as string, bullets as string, title as int, notes as int
     bad_slide = {
         "title": 123,
@@ -120,7 +124,7 @@ def test_export_slides_handles_type_mismatches(temp_output_file, clean_templates
     fd, path = tempfile.mkstemp(suffix=".json")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(bad_slide, f)
-    export_slides(path, temp_output_file)
+    await export_slides(path, temp_output_file)
     prs = Presentation(temp_output_file)
     # Should have 2 slides: 1 title + 1 content
     assert len(prs.slides) == 2
@@ -131,12 +135,13 @@ def test_export_slides_handles_type_mismatches(temp_output_file, clean_templates
     os.remove(path)
 
 
-def test_export_slides_empty_slides(temp_output_file, clean_templates):
+@pytest.mark.asyncio
+async def test_export_slides_empty_slides(temp_output_file, clean_templates):
     empty_slide = {"title": "Empty", "slides": []}
     fd, path = tempfile.mkstemp(suffix=".json")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(empty_slide, f)
-    export_slides(path, temp_output_file)
+    await export_slides(path, temp_output_file)
     prs = Presentation(temp_output_file)
     # Should have 1 slide (title only)
     assert len(prs.slides) == 1
