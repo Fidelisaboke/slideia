@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 router = APIRouter()
 
-if settings.ENV == "test":
+if settings.ENVIRONMENT == "test":
     cache = Cache()
 else:
     cache = RedisCache()
