@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="slideia API", version="0.5.0", lifespan=lifespan)
+app = FastAPI(title="slideia API", version="0.5.1", lifespan=lifespan)
 
 # CORS Configuration
 app.add_middleware(

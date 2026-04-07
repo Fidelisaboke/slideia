@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "0.5.0"
+version = "0.5.1"
 description = "Slideia Backend API"
 authors = [{ name = "Fidelisaboke" }]
 readme = "README.md"
