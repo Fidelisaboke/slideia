@@ -191,7 +191,7 @@ async def export_pptx(request: DeckRequest):
 
         # Export to PPTX
         logger.info(f"Exporting to {output_path}")
-        export_slides(json_path, str(output_path))
+        await export_slides(json_path, str(output_path))
 
         logger.info("✓ Export complete!")
 
