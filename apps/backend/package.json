@@ -1,6 +1,6 @@
 {
   "name": "@slideia/backend",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "scripts": {
     "dev": "PYTHONPATH=src uv run uvicorn slideia.main:app --reload",

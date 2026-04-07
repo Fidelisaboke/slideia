@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "0.5.0"
+version = "0.5.1"
 description = "Slideia Backend API"
 authors = [{ name = "Fidelisaboke" }]
 readme = "README.md"
@@ -22,5 +22,6 @@ dev = [
 test = [
     "coverage>=7.13.1",
     "pytest>=9.0.2",
+    "pytest-asyncio>=0.25.3",
     "pytest-cov>=7.0.0",
 ]

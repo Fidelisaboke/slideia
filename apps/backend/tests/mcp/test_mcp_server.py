@@ -4,17 +4,18 @@ import pytest
 from slideia.mcp import server
 
 
-def test_generate_pptx_tool_creates_file(tmp_path):
+@pytest.mark.asyncio
+async def test_generate_pptx_tool_creates_file(tmp_path):
     # Patch export_slides to just create a file
     with patch(
-        "slideia.mcp.server.export_slides", return_value="/tmp/fake.pptx"
+        "slideia.mcp.server.export_slides", return_value=None
     ) as mock_export:
         input_path = tmp_path / "input.json"
         output_path = tmp_path / "output.pptx"
         input_path.write_text("{}", encoding="utf-8")
-        result = server.generate_pptx_tool(str(input_path), str(output_path))
+        result = await server.generate_pptx_tool(str(input_path), str(output_path))
         mock_export.assert_called_once_with(str(input_path), str(output_path))
-        assert result == "/tmp/fake.pptx"
+        assert result == str(output_path)
 
 
 def test_propose_outline_tool_calls_llm():
@@ -36,11 +37,12 @@ def test_draft_slide_tool_calls_llm():
         assert "bullets" in result
 
 
-def test_generate_pptx_tool_file_not_found(tmp_path):
+@pytest.mark.asyncio
+async def test_generate_pptx_tool_file_not_found(tmp_path):
     # Simulate export_slides raising FileNotFoundError
     with patch("slideia.mcp.server.export_slides", side_effect=FileNotFoundError):
         with pytest.raises(FileNotFoundError):
-            server.generate_pptx_tool("/no/such/file.json", str(tmp_path / "out.pptx"))
+            await server.generate_pptx_tool("/no/such/file.json", str(tmp_path / "out.pptx"))
 
 
 def test_propose_outline_tool_llm_error():
