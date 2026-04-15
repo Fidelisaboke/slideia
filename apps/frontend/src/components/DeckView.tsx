@@ -1,8 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { GenerateDeckResponse } from '@/types/api';
+import { useState, useCallback } from 'react';
+import { motion } from 'motion/react';
+import { Download, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { GenerateDeckResponse, SlideExportItem } from '@/types/api';
 import { apiClient } from '@/lib/apiClient';
+import EditableSlide from '@/components/EditableSlide';
+import { fadeInUp, staggerContainer } from '@/lib/motion';
+
+// ── Types ────────────────────────────────────────────────────────────
+
+interface EditableSlideData {
+  title: string;
+  summary: string;
+  bullets: string[];
+  notes: string;
+  image_prompt: string;
+  theme?: Record<string, string>;
+}
 
 interface DeckViewProps {
   deck: GenerateDeckResponse;
@@ -13,196 +28,194 @@ interface DeckViewProps {
   onReset: () => void;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Merge outline + slide content into a single editable array.
+ */
+function buildEditableSlides(deck: GenerateDeckResponse): EditableSlideData[] {
+  return deck.slides.map((slide, i) => ({
+    title: deck.outline.slides[i]?.title ?? `Slide ${i + 1}`,
+    summary: deck.outline.slides[i]?.summary ?? '',
+    bullets: [...slide.bullets],
+    notes: slide.notes ?? '',
+    image_prompt: slide.image_prompt ?? '',
+    theme: slide.theme,
+  }));
+}
+
+// ── Component ────────────────────────────────────────────────────────
+
 export default function DeckView({
-  deck, topic, audience, tone, slideCount, onReset
+  deck,
+  topic,
+  audience,
+  onReset,
 }: DeckViewProps) {
+  const [slides, setSlides] = useState<EditableSlideData[]>(() =>
+    buildEditableSlides(deck)
+  );
+  const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const handleExportPptx = async() => {
+  // ── Update a single slide's fields ───────────────────────────────
+
+  const handleUpdateSlide = useCallback(
+    (index: number, updated: Partial<EditableSlideData>) => {
+      setSlides((prev) =>
+        prev.map((s, i) => (i === index ? { ...s, ...updated } : s))
+      );
+    },
+    []
+  );
+
+  // ── Regenerate a single slide via the API ────────────────────────
+
+  const handleRegenerate = useCallback(
+    async (index: number, instruction?: string) => {
+      const slide = slides[index];
+      if (!slide) return;
+
+      setRegeneratingIdx(index);
+      try {
+        const result = await apiClient.regenerateSlide({
+          title: slide.title,
+          summary: slide.summary,
+          instruction,
+        });
+
+        setSlides((prev) =>
+          prev.map((s, i) =>
+            i === index
+              ? {
+                  ...s,
+                  bullets: result.bullets,
+                  notes: result.notes ?? s.notes,
+                  image_prompt: result.image_prompt ?? s.image_prompt,
+                }
+              : s
+          )
+        );
+      } catch (err) {
+        console.error('Failed to regenerate slide:', err);
+        // Optionally surface error — for now just log
+      } finally {
+        setRegeneratingIdx(null);
+      }
+    },
+    [slides]
+  );
+
+  // ── Export the modified deck ──────────────────────────────────────
+
+  const handleExport = useCallback(async () => {
     setIsExporting(true);
     setExportError(null);
 
     try {
+      const exportSlides: SlideExportItem[] = slides.map((s) => ({
+        title: s.title,
+        summary: s.summary,
+        bullets: s.bullets,
+        notes: s.notes,
+        image_prompt: s.image_prompt,
+        theme: s.theme,
+      }));
+
       const response = await apiClient.exportPptx({
         topic,
         audience,
-        tone,
-        slide_count: slideCount,
+        slides: exportSlides,
       });
 
       const downloadUrl = apiClient.getDownloadUrl(response.download_url);
       window.open(downloadUrl, '_blank');
-    } catch (error) {
+    } catch (err) {
       setExportError(
-        error instanceof Error ? error.message : 'Failed to export PowerPoint. Please try again.'
+        err instanceof Error
+          ? err.message
+          : 'Failed to export PowerPoint. Please try again.'
       );
     } finally {
       setIsExporting(false);
     }
-  }
-
+  }, [slides, topic, audience]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+    <div className="w-full max-w-4xl mx-auto">
+      {/* ── Header ────────────────────────────────────────────────── */}
+      <motion.div
+        className="text-center mb-8"
+        variants={fadeInUp}
+        initial="hidden"
+        animate="show"
+      >
+        <div className="inline-flex items-center justify-center w-14 h-14
+                        rounded-2xl bg-secondary/10 mb-4">
+          <CheckCircle2 className="w-7 h-7 text-secondary" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-1">
           {deck.outline.title}
         </h2>
-        <p className="text-gray-600">
-          Your presentation on <span className="font-semibold">{topic}</span> has been
-          generated successfully.
+        <p className="text-sm text-muted-foreground">
+          Review and edit your slides below, then export when ready.
         </p>
-      </div>
+      </motion.div>
 
-      {/* Export Error Alert */}
+      {/* ── Export Error ───────────────────────────────────────────── */}
       {exportError && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
-          <svg
-            className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div className="flex-1">
-            <p className="text-sm text-red-700">{exportError}</p>
-          </div>
+        <div className="mb-6 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-xl
+                        flex items-center justify-between">
+          <p className="text-xs text-destructive">{exportError}</p>
           <button
             onClick={() => setExportError(null)}
-            className="text-red-400 hover:text-red-600 ml-4"
+            className="text-destructive/60 hover:text-destructive ml-2 text-sm"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
+            ✕
           </button>
         </div>
       )}
 
-      {/* Slides Preview */}
-      <div className="space-y-6 mb-6">
-        {deck.slides.map((slide, index) => (
-          <div
+      {/* ── Editable Slides ───────────────────────────────────────── */}
+      <motion.div
+        className="space-y-4 mb-8"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        {slides.map((slide, index) => (
+          <EditableSlide
             key={index}
-            className="p-5 bg-gradient-to-br from-gray-50 to-white rounded-lg border-2 border-gray-200 hover:border-blue-300 transition"
-          >
-            <div className="flex items-start mb-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-base mr-4">
-                {index + 1}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-800 mb-1">
-                  {deck.outline.slides[index].title}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {deck.outline.slides[index].summary}
-                </p>
-              </div>
-            </div>
-
-            {/* Bullet Points */}
-            <div className="ml-14 mb-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                Key Points:
-              </h4>
-              <ul className="space-y-2">
-                {slide.bullets.map((bullet, bulletIdx) => (
-                  <li
-                    key={bulletIdx}
-                    className="flex items-start text-gray-700"
-                  >
-                    <span className="text-blue-600 mr-2 mt-1">▪</span>
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Speaker Notes */}
-            {slide.notes && (
-              <div className="ml-14 mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
-                <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1 text-yellow-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                  Speaker Notes:
-                </h4>
-                <p className="text-xs text-gray-600">{slide.notes}</p>
-              </div>
-            )}
-
-            {/* Image Prompt */}
-            {slide.image_prompt && (
-              <div className="ml-14 p-3 bg-purple-50 rounded-md border border-purple-200">
-                <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1 text-purple-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Suggested Image:
-                </h4>
-                <p className="text-xs text-gray-600 italic">{slide.image_prompt}</p>
-              </div>
-            )}
-          </div>
+            index={index}
+            data={slide}
+            isRegenerating={regeneratingIdx === index}
+            onUpdate={handleUpdateSlide}
+            onRegenerate={handleRegenerate}
+          />
         ))}
-      </div>
+      </motion.div>
 
-      {/* Actions */}
-      <div className="space-y-3">
+      {/* ── Action Buttons ────────────────────────────────────────── */}
+      <motion.div
+        className="space-y-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+      >
         <button
-          onClick={handleExportPptx}
+          onClick={handleExport}
           disabled={isExporting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+          className="w-full gradient-button text-white font-semibold py-3 px-6 rounded-xl
+                     shadow-md shadow-primary/20
+                     hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     transition-all duration-200 flex items-center justify-center gap-2"
         >
           {isExporting ? (
             <>
               <svg
-                className="animate-spin h-5 w-5 mr-3"
+                className="animate-spin h-5 w-5"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -221,40 +234,31 @@ export default function DeckView({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              Exporting...
+              Exporting…
             </>
           ) : (
             <>
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
+              <Download className="w-5 h-5" />
               Export to PowerPoint
             </>
           )}
         </button>
+
         <button
           onClick={onReset}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full text-muted-foreground hover:text-primary font-medium
+                     py-3 px-6 rounded-xl border border-border
+                     hover:border-primary/30 hover:bg-primary/5
+                     transition-all duration-200 flex items-center justify-center gap-2"
         >
+          <RotateCcw className="w-4 h-4" />
           Create Another Presentation
         </button>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            💡 Tip: Click &quot;Export to PowerPoint&quot; to download your presentation as a .pptx file
-          </p>
-        </div>
-      </div>
+        <p className="text-center text-[10px] text-muted-foreground/50 mt-2">
+          💡 Edit titles and bullet points inline · Click &quot;Regenerate&quot; to re-roll a slide · Add instructions for targeted improvements
+        </p>
+      </motion.div>
     </div>
   );
 }

@@ -5,6 +5,9 @@ import {
     ProposeOutlineResponse,
     ExportPptxRequest,
     ExportPptxResponse,
+    RegenerateSlideRequest,
+    RegenerateSlideResponse,
+    FullDeckExportRequest,
 } from '@/types/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -66,8 +69,23 @@ class ApiClient {
         })
     };
 
+    async regenerateSlide(
+        data: RegenerateSlideRequest
+    ): Promise<RegenerateSlideResponse> {
+        return this.request<RegenerateSlideResponse>('/regenerate-slide', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
     async exportPptx(
         data: ExportPptxRequest
+    ): Promise<ExportPptxResponse>;
+    async exportPptx(
+        data: FullDeckExportRequest
+    ): Promise<ExportPptxResponse>;
+    async exportPptx(
+        data: ExportPptxRequest | FullDeckExportRequest
     ): Promise<ExportPptxResponse> {
         return this.request<ExportPptxResponse>('/export-pptx', {
             method: 'POST',

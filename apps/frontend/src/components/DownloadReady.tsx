@@ -1,5 +1,7 @@
 'use client';
 
+import { Download, RotateCcw, CheckCircle2 } from 'lucide-react';
+
 interface DownloadReadyProps {
   pptxUrl: string;
   topic: string;
@@ -16,28 +18,17 @@ export default function DownloadReady({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-2xl mx-auto p-6 glass-panel glow-border rounded-2xl">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-          <svg
-            className="w-8 h-8 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+        <div className="inline-flex items-center justify-center w-14 h-14
+                        rounded-2xl bg-secondary/10 mb-4">
+          <CheckCircle2 className="w-7 h-7 text-secondary" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-2">
           Presentation Ready!
         </h2>
-        <p className="text-gray-600">
-          Your presentation on <span className="font-semibold">{topic}</span> has been
+        <p className="text-muted-foreground">
+          Your presentation on <span className="font-semibold text-foreground">{topic}</span> has been
           generated successfully.
         </p>
       </div>
@@ -45,35 +36,30 @@ export default function DownloadReady({
       <div className="space-y-3">
         <button
           onClick={handleDownload}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+          className="w-full gradient-button text-white font-semibold py-3 px-6 rounded-xl
+                     shadow-md shadow-primary/20
+                     hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0
+                     transition-all duration-200 flex items-center justify-center gap-2"
         >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
+          <Download className="w-5 h-5" />
           Download PowerPoint
         </button>
 
         <button
           onClick={onReset}
-          className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out"
+          className="w-full text-muted-foreground hover:text-primary font-medium
+                     py-3 px-6 rounded-xl border border-border
+                     hover:border-primary/30 hover:bg-primary/5
+                     transition-all duration-200 flex items-center justify-center gap-2"
         >
+          <RotateCcw className="w-4 h-4" />
           Create Another Presentation
         </button>
       </div>
 
-      <div className="mt-6 p-4 bg-gray-50 rounded-md border border-gray-200">
-        <p className="text-xs text-gray-600 mb-2">Download URL:</p>
-        <code className="text-xs text-blue-600 break-all">{pptxUrl}</code>
+      <div className="mt-6 p-4 bg-background-subtle rounded-xl border border-border">
+        <p className="text-xs text-muted-foreground mb-2">Download URL:</p>
+        <code className="text-xs text-primary break-all">{pptxUrl}</code>
       </div>
     </div>
   );

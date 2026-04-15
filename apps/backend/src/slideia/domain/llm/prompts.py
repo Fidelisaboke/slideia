@@ -63,3 +63,43 @@ OUTPUT FORMAT (valid JSON only):
 CRITICAL RULES:
 - Return ONLY valid JSON
 """
+
+
+REGENERATE_SLIDE_PROMPT = """Regenerate the content for a PowerPoint slide.
+
+SLIDE INFORMATION:
+- Title: {title}
+- Purpose: {summary}
+
+{instruction_block}
+
+CONTENT REQUIREMENTS:
+
+1. BULLET POINTS (3-5 bullets):
+   - Each bullet should be concise and actionable (max 10-12 words)
+   - Focus on key takeaways, not repeating the summary
+   - Use parallel structure
+   - No redundancy
+
+2. SPEAKER NOTES (2-3 sentences)
+
+3. IMAGE PROMPT (1 sentence)
+
+4. THEME (optional styling)
+
+OUTPUT FORMAT (valid JSON only):
+{{
+  "bullets": [...],
+  "notes": "...",
+  "image_prompt": "...",
+  "theme": {{
+    "font": "Calibri",
+    "color": "#1E40AF"
+  }}
+}}
+
+CRITICAL RULES:
+- Return ONLY valid JSON
+- Generate FRESH content that is different from the previous version
+"""
+

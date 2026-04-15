@@ -4,7 +4,12 @@ import os
 import tempfile
 
 from fastapi import APIRouter, HTTPException
-from slideia.api.schemas import DeckRequest, ProposeOutlineRequest
+from slideia.api.schemas import (
+    DeckRequest,
+    FullDeckExportRequest,
+    ProposeOutlineRequest,
+    RegenerateSlideRequest,
+)
 from slideia.core.config import settings
 from slideia.core.logging import get_logger
 from slideia.domain.deck.exporter import export_slides
@@ -108,66 +113,99 @@ def generate_deck(request: DeckRequest):
         )
 
 
-@router.post("/export-pptx")
-async def export_pptx(request: DeckRequest):
+@router.post("/regenerate-slide")
+def regenerate_slide(request: RegenerateSlideRequest):
     """
-    Export a slide deck to a PowerPoint (.pptx) file.
+    Regenerate a single slide's content using the LLM.
 
     Request JSON:
-        {"topic": str, "audience": str, "tone": str, "slide_count": int}
+        {"title": str, "summary": str, "instruction": str | None}
+
+    Response JSON:
+        {"bullets": [...], "notes": str, "image_prompt": str, "theme": dict}
+
+    Returns HTTP 500 with error message if LLM call fails.
+    """
+    try:
+        logger.info(
+            f"Regenerating slide: title='{request.title}', "
+            f"instruction='{request.instruction or 'none'}'"
+        )
+        result = llm.regenerate_slide(
+            title=request.title,
+            summary=request.summary,
+            instruction=request.instruction,
+        )
+        logger.info("Slide regenerated successfully")
+        return result
+
+    except Exception as e:
+        logger.error(str(e))
+        raise HTTPException(
+            status_code=500, detail="Oops! Something went wrong on our end."
+        )
+
+
+@router.post("/export-pptx")
+async def export_pptx(request: FullDeckExportRequest):
+    """
+    Export a user-edited slide deck to a PowerPoint (.pptx) file.
+
+    Request JSON:
+        {
+            "topic": str,
+            "audience": str,
+            "slides": [
+                {
+                    "title": str,
+                    "summary": str,
+                    "bullets": [...],
+                    "notes": str,
+                    "image_prompt": str,
+                    "theme": dict | None
+                }
+            ]
+        }
 
     Response JSON:
         {"download_url": str, "filename": str}
 
-    Returns HTTP 500 with error message if LLM call or export fails.
+    Returns HTTP 500 with error message if export fails.
     """
     json_path = None
 
     try:
         logger.info(f"\nStarting PPTX export for topic='{request.topic}'")
 
-        # Use cached deck if available
-        deck = generate_full_deck(
-            request.topic,
-            request.audience,
-            request.tone,
-            request.slide_count,
-            llm,
-            cache,
-        )
-
-        outline = deck.outline
-        slides_content = deck.slides
-
         logger.info("Fetching images...")
         image_fetcher = ImageFetcher()
 
-        # Create a list of async tasks
+        # Create a list of async tasks for image fetching
         tasks = []
-        for slide in slides_content:
+        for slide in request.slides:
             tasks.append(image_fetcher.fetch_image_url(slide.image_prompt))
 
         # Run tasks concurrently
         image_urls = await asyncio.gather(*tasks)
 
-        logger.info(f"Using deck with {len(slides_content)} slides")
+        logger.info(f"Exporting deck with {len(request.slides)} slides")
 
-        # Prepare data for export
+        # Prepare data for export from the user-provided state
         deck_data = {
-            "title": outline.get("title", request.topic),
+            "title": request.topic,
             "subtitle": f"For {request.audience}",
             "slides": [],
         }
 
-        for i, slide_spec in enumerate(outline.get("slides", [])):
+        for i, slide in enumerate(request.slides):
             slide_data = {
-                "title": slide_spec.get("title", f"Slide {i + 1}"),
-                "summary": slide_spec.get("summary", ""),
-                "bullets": slides_content[i].bullets,
-                "image_prompt": slides_content[i].image_prompt,
+                "title": slide.title,
+                "summary": slide.summary,
+                "bullets": slide.bullets,
+                "image_prompt": slide.image_prompt,
                 "image_url": image_urls[i],
-                "notes": slides_content[i].notes,
-                "theme": slides_content[i].theme,
+                "notes": slide.notes,
+                "theme": slide.theme,
             }
             deck_data["slides"].append(slide_data)
 
