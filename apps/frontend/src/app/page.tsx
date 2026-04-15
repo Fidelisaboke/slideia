@@ -2,15 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import Link from 'next/link';
-import SlideForm from '@/components/SlideForm';
+import LandingPage from '@/components/landing/LandingPage';
+import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
 import OutlineView from '@/components/OutlineView';
 import DeckView from '@/components/DeckView';
 import ErrorAlert from '@/components/ErrorAlert';
-import ThemeToggle from '@/components/ThemeToggle';
 import { apiClient } from '@/lib/apiClient';
 import { ProposeOutlineResponse, GenerateDeckResponse } from '@/types/api';
-import { fadeInUp, staggerContainer } from '@/lib/motion';
 
 type Step = 'form' | 'outline' | 'deck';
 
@@ -98,48 +97,29 @@ export default function Home() {
     setError(null);
   };
 
+  // ── Landing page (form step) ──────────────────────────────────────
+  if (step === 'form') {
+    return (
+      <>
+        {error && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4">
+            <ErrorAlert message={error} onDismiss={() => setError(null)} />
+          </div>
+        )}
+        <LandingPage
+          onSubmit={handleFormSubmit}
+          isLoading={isLoadingOutline}
+        />
+      </>
+    );
+  }
+
+  // ── Editor views (outline / deck steps) ───────────────────────────
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation bar */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl gradient-button shadow-md
-                          group-hover:-translate-y-0.5 transition-transform duration-300">
-            <span className="text-white font-bold text-base font-(family-name:--font-sora)">S</span>
-          </div>
-          <h1 className="text-lg font-bold font-(family-name:--font-sora) tracking-tight">
-            <span className="gradient-text">Slide</span>
-            <span className="text-foreground font-semibold">ia</span>
-          </h1>
-        </Link>
-        <ThemeToggle />
-      </nav>
+      <Navbar />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div
-          className="text-center mb-12"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.h2
-            variants={fadeInUp}
-            className="text-4xl sm:text-5xl font-bold font-(family-name:--font-sora) mb-4"
-          >
-            <span className="gradient-text">
-              AI-Powered
-            </span>{' '}
-            <span className="text-foreground">Slide Decks</span>
-          </motion.h2>
-          <motion.p
-            variants={fadeInUp}
-            className="text-lg text-muted-foreground max-w-lg mx-auto"
-          >
-            Create professional presentations in seconds with the power of AI
-          </motion.p>
-        </motion.div>
-
         {/* Error Alert */}
         {error && (
           <ErrorAlert message={error} onDismiss={() => setError(null)} />
@@ -150,15 +130,8 @@ export default function Home() {
           className="flex justify-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
         >
-          {step === 'form' && (
-            <SlideForm
-              onSubmit={handleFormSubmit}
-              isLoading={isLoadingOutline}
-            />
-          )}
-
           {step === 'outline' && outline && (
             <OutlineView
               outline={outline}
@@ -211,10 +184,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="text-center py-8 text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} - Slideia</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
