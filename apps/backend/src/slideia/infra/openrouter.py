@@ -6,7 +6,7 @@ import httpx
 import requests
 from slideia.core.logging import get_logger
 from slideia.domain.llm.interfaces import OutlineGenerator, SlideGenerator
-from slideia.domain.llm.prompts import OUTLINE_PROMPT, SLIDE_PROMPT
+from slideia.domain.llm.prompts import OUTLINE_PROMPT, SLIDE_PROMPT, REGENERATE_SLIDE_PROMPT
 
 logger = get_logger(__name__)
 
@@ -97,6 +97,22 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         prompt = SLIDE_PROMPT.format(
             title=slide_spec.get("title", "Slide"),
             summary=slide_spec.get("summary", ""),
+        )
+        return self._call(prompt)
+
+    def regenerate_slide(
+        self, title: str, summary: str, instruction: str | None = None
+    ) -> dict:
+        """Re-draft a slide's content, optionally guided by user instruction."""
+        if instruction:
+            instruction_block = f"USER INSTRUCTION:\n{instruction}\n\nPlease incorporate the above instruction when generating the new content."
+        else:
+            instruction_block = "Create fresh, varied content that differs from any previous version."
+
+        prompt = REGENERATE_SLIDE_PROMPT.format(
+            title=title,
+            summary=summary,
+            instruction_block=instruction_block,
         )
         return self._call(prompt)
 

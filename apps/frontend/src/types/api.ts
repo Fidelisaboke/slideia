@@ -21,13 +21,16 @@ export interface GenerateDeckRequest {
     slide_count: number;
 }
 
+export interface SlideContent {
+    bullets: string[];
+    notes: string;
+    image_prompt: string;
+    theme?: Record<string, string>;
+}
+
 export interface GenerateDeckResponse {
     outline: ProposeOutlineResponse;
-    slides: Array<{
-        bullets: string[];
-        notes: string;
-        image_prompt: string;
-    }>;
+    slides: SlideContent[];
 }
 
 export interface ExportPptxRequest {
@@ -35,12 +38,41 @@ export interface ExportPptxRequest {
     audience: string;
     tone: string;
     slide_count: number;
-};
+}
 
 export interface ExportPptxResponse {
     download_url: string;
     filename: string;
 }
+
+// ── Slide Regeneration ───────────────────────────────────────────────
+
+export interface RegenerateSlideRequest {
+    title: string;
+    summary: string;
+    instruction?: string;
+}
+
+export type RegenerateSlideResponse = SlideContent;
+
+// ── Full Deck Export (user-edited state) ─────────────────────────────
+
+export interface SlideExportItem {
+    title: string;
+    summary: string;
+    bullets: string[];
+    notes: string;
+    image_prompt: string;
+    theme?: Record<string, string>;
+}
+
+export interface FullDeckExportRequest {
+    topic: string;
+    audience: string;
+    slides: SlideExportItem[];
+}
+
+// ── Errors ───────────────────────────────────────────────────────────
 
 export interface ApiError {
     error: string;

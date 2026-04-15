@@ -139,7 +139,7 @@ function MarkdownContent({ content }: { content: string }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:text-blue-500 transition-colors"
+            className="text-primary underline underline-offset-2 hover:text-primary-hover transition-colors"
           >
             {children}
           </a>
@@ -147,7 +147,7 @@ function MarkdownContent({ content }: { content: string }) {
 
         // Blockquotes
         blockquote: ({ children }) => (
-          <blockquote className="border-l-3 border-blue-500/40 pl-3 my-2 text-muted-foreground italic">
+          <blockquote className="border-l-3 border-primary/40 pl-3 my-2 text-muted-foreground italic">
             {children}
           </blockquote>
         ),
@@ -222,11 +222,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
         {/* Message content */}
         {isUser ? (
-          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+          <div className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed">
             {message.content}
           </div>
         ) : (
-          <div className="text-sm break-words chat-markdown">
+          <div className="text-sm wrap-break-word chat-markdown">
             <MarkdownContent content={message.content} />
             {message.isStreaming && (
               <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-blink align-text-bottom rounded-sm" />
