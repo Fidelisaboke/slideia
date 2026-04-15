@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'motion/react';
+import Link from 'next/link';
 import SlideForm from '@/components/SlideForm';
 import OutlineView from '@/components/OutlineView';
 import DeckView from '@/components/DeckView';
 import ErrorAlert from '@/components/ErrorAlert';
+import ThemeToggle from '@/components/ThemeToggle';
 import { apiClient } from '@/lib/apiClient';
 import { ProposeOutlineResponse, GenerateDeckResponse } from '@/types/api';
+import { fadeInUp, staggerContainer } from '@/lib/motion';
 
 type Step = 'form' | 'outline' | 'deck';
 
@@ -95,19 +99,46 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-purple-200">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Slideia
-            </span>
+    <div className="min-h-screen bg-background">
+      {/* Navigation bar */}
+      <nav className="flex items-center justify-between px-6 py-4 max-w-5xl mx-auto">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl gradient-button shadow-md
+                          group-hover:-translate-y-0.5 transition-transform duration-300">
+            <span className="text-white font-bold text-base font-(family-name:--font-sora)">S</span>
+          </div>
+          <h1 className="text-lg font-bold font-(family-name:--font-sora) tracking-tight">
+            <span className="gradient-text">Slide</span>
+            <span className="text-foreground font-semibold">ia</span>
           </h1>
-          <p className="text-xl text-gray-600">
-            AI-Powered Slide Deck Generator
-          </p>
-        </div>
+        </Link>
+        <ThemeToggle />
+      </nav>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <motion.div
+          className="text-center mb-12"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.h2
+            variants={fadeInUp}
+            className="text-4xl sm:text-5xl font-bold font-(family-name:--font-sora) mb-4"
+          >
+            <span className="gradient-text">
+              AI-Powered
+            </span>{' '}
+            <span className="text-foreground">Slide Decks</span>
+          </motion.h2>
+          <motion.p
+            variants={fadeInUp}
+            className="text-lg text-muted-foreground max-w-lg mx-auto"
+          >
+            Create professional presentations in seconds with the power of AI
+          </motion.p>
+        </motion.div>
 
         {/* Error Alert */}
         {error && (
@@ -115,7 +146,12 @@ export default function Home() {
         )}
 
         {/* Main Content */}
-        <div className="flex justify-center">
+        <motion.div
+          className="flex justify-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
           {step === 'form' && (
             <SlideForm
               onSubmit={handleFormSubmit}
@@ -145,7 +181,7 @@ export default function Home() {
               onReset={handleReset}
             />
           )}
-        </div>
+        </motion.div>
 
         {/* Back Button (shown on outline step) */}
         {step === 'outline' && (
@@ -153,7 +189,8 @@ export default function Home() {
             <button
               onClick={handleReset}
               disabled={isGeneratingDeck}
-              className="text-gray-600 hover:text-gray-800 disabled:text-gray-400 font-medium flex items-center transition"
+              className="text-muted-foreground hover:text-primary disabled:text-muted-foreground/50
+                         font-medium flex items-center transition-colors duration-200"
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -175,7 +212,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="text-center py-8 text-gray-500 text-sm">
+      <footer className="text-center py-8 text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} - Slideia</p>
       </footer>
     </div>

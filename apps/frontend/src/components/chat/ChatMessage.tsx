@@ -196,11 +196,11 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={`
-          max-w-[80%] rounded-2xl px-4 py-3 shadow-sm
+          max-w-[80%] rounded-2xl px-4 py-3
           ${
             isUser
-              ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-br-md'
-              : 'bg-card text-card-foreground border border-border rounded-bl-md'
+              ? 'gradient-button text-white rounded-br-md shadow-md shadow-primary/20'
+              : 'glass-panel glow-border text-card-foreground rounded-bl-md'
           }
         `}
       >
@@ -229,7 +229,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           <div className="text-sm break-words chat-markdown">
             <MarkdownContent content={message.content} />
             {message.isStreaming && (
-              <span className="inline-block w-1.5 h-4 bg-current ml-0.5 animate-blink align-text-bottom rounded-sm" />
+              <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-blink align-text-bottom rounded-sm" />
             )}
           </div>
         )}
@@ -246,3 +246,4 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     </div>
   );
 }
+

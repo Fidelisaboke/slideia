@@ -192,15 +192,15 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           relative flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-lg
           transition-all duration-200
           ${isDragging
-            ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20'
-            : 'border-border hover:border-foreground/20'
+            ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+            : 'border-border hover:border-primary/20'
           }
         `}
       >
         {/* Drag overlay */}
         {isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-blue-500/5 backdrop-blur-[1px] z-10 pointer-events-none">
-            <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-primary/5 backdrop-blur-[1px] z-10 pointer-events-none">
+            <p className="text-sm font-medium text-primary">
               Drop files here
             </p>
           </div>
@@ -256,7 +256,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           className={`
             shrink-0 h-9 w-9 rounded-xl transition-all duration-200
             ${canSend
-              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:shadow-lg hover:scale-105'
+              ? 'gradient-button text-white shadow-md shadow-primary/20 hover:shadow-lg hover:scale-105'
               : 'bg-muted text-muted-foreground'
             }
           `}

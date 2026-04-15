@@ -1,12 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useChat } from '@/hooks/useChat';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
+import ThemeToggle from '@/components/ThemeToggle';
 import { FileAttachment } from '@/types/chat';
-import { MessageSquare, Sparkles, ArrowDown } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, ArrowDown } from 'lucide-react';
+import { fadeInUp, staggerFast, scaleIn } from '@/lib/motion';
 
 // ── Suggested prompts for the empty state ────────────────────────────
 
@@ -33,7 +36,6 @@ export default function ChatView() {
   }, []);
 
   useEffect(() => {
-    // Only auto-scroll if user is near the bottom
     const container = scrollContainerRef.current;
     if (!container) {
       scrollToBottom();
@@ -84,28 +86,37 @@ export default function ChatView() {
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)] max-w-4xl mx-auto">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600">
-            <MessageSquare className="w-4 h-4 text-white" />
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border glass-panel rounded-b-xl">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Creative Logo */}
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
+                          group-hover:-translate-y-0.5 transition-transform duration-300">
+            <span className="text-white font-bold text-sm font-(family-name:--font-sora)">S</span>
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-foreground">Slideia Chat</h1>
+            <h1 className="text-sm font-bold font-(family-name:--font-sora) tracking-tight">
+              <span className="gradient-text">Slide</span>
+              <span className="text-foreground font-semibold">ia</span>
+              <span className="text-muted-foreground text-[10px] font-normal ml-1.5">Chat</span>
+            </h1>
             <p className="text-[10px] text-muted-foreground">
               AI-powered presentation creator
             </p>
           </div>
-        </div>
+        </Link>
 
-        {hasMessages && (
-          <button
-            onClick={clearChat}
-            className="text-xs text-muted-foreground hover:text-foreground
-                       transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
-          >
-            New chat
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasMessages && (
+            <button
+              onClick={clearChat}
+              className="text-xs text-muted-foreground hover:text-primary
+                         transition-colors px-3 py-1.5 rounded-lg hover:bg-primary/10"
+            >
+              New chat
+            </button>
+          )}
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* ── Messages area ───────────────────────────────────────── */}
@@ -122,11 +133,17 @@ export default function ChatView() {
           </>
         ) : (
           /* ── Empty state ──────────────────────────────────────── */
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 mb-6">
-              <Sparkles className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          <motion.div
+            className="flex flex-col items-center justify-center h-full text-center px-4"
+            initial="hidden"
+            animate="show"
+            variants={fadeInUp}
+          >
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl
+                            bg-primary/10 mb-6 glow-border">
+              <Sparkles className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-2">
               What would you like to present?
             </h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-md">
@@ -134,22 +151,29 @@ export default function ChatView() {
               professional slide deck. You can also attach files for context.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg">
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg"
+              variants={staggerFast}
+              initial="hidden"
+              animate="show"
+            >
               {SUGGESTIONS.map((suggestion) => (
-                <button
+                <motion.button
                   key={suggestion}
+                  variants={scaleIn}
                   onClick={() => handleSuggestion(suggestion)}
                   disabled={isStreaming}
+                  whileHover={{ y: -2, transition: { duration: 0.2 } }}
                   className="text-left text-xs text-muted-foreground p-3 rounded-xl
-                             border border-border/60 hover:border-foreground/20
-                             hover:bg-muted/50 transition-all duration-200
+                             border border-border hover:border-primary/30
+                             hover:bg-primary/5 transition-colors duration-200
                              disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {suggestion}
-                </button>
+                </motion.button>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
       </div>
 
@@ -160,8 +184,8 @@ export default function ChatView() {
             onClick={() => scrollToBottom()}
             className="absolute -top-12 left-1/2 -translate-x-1/2 z-10
                        flex items-center gap-1 text-xs text-muted-foreground
-                       bg-card border border-border shadow-md rounded-full
-                       px-3 py-1.5 hover:bg-muted transition-all duration-200"
+                       glass-panel shadow-md rounded-full
+                       px-3 py-1.5 hover:bg-primary/10 transition-all duration-200"
           >
             <ArrowDown className="w-3 h-3" />
             New messages
