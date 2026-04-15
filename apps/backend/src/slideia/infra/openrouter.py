@@ -1,6 +1,8 @@
 import json
 import re
+from collections.abc import AsyncGenerator
 
+import httpx
 import requests
 from slideia.core.logging import get_logger
 from slideia.domain.llm.interfaces import OutlineGenerator, SlideGenerator
@@ -97,3 +99,79 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             summary=slide_spec.get("summary", ""),
         )
         return self._call(prompt)
+
+    async def stream_call(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int = 2048,
+    ) -> AsyncGenerator[str, None]:
+        """Stream content deltas from OpenRouter.
+
+        Yields individual text chunks as they arrive.  The caller is
+        responsible for assembling them into a complete response.
+
+        Args:
+            messages: OpenAI-compatible message list
+                      (e.g. [{"role": "user", "content": "..."}]).
+            max_tokens: Upper bound on generated tokens.
+
+        Yields:
+            str: A content delta (possibly a single token or a few tokens).
+
+        Raises:
+            httpx.HTTPStatusError: On non-2xx responses from OpenRouter.
+            ValueError: If the stream contains an unrecoverable error event.
+        """
+        logger.info("Starting streaming call to OpenRouter...")
+
+        request_body = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+            async with client.stream(
+                "POST",
+                OPENROUTER_API_URL,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=request_body,
+            ) as response:
+                response.raise_for_status()
+
+                async for raw_line in response.aiter_lines():
+                    line = raw_line.strip()
+
+                    # SSE protocol: skip empty lines and comments
+                    if not line or line.startswith(":"):
+                        continue
+
+                    # Strip the "data: " prefix
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[len("data: "):]
+
+                    # OpenAI-compatible stream terminator
+                    if data_str == "[DONE]":
+                        logger.info("Stream complete.")
+                        return
+
+                    try:
+                        chunk = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Skipping malformed SSE chunk: {data_str[:120]}")
+                        continue
+
+                    # Extract the content delta
+                    choices = chunk.get("choices", [])
+                    if not choices:
+                        continue
+
+                    delta = choices[0].get("delta", {})
+                    content = delta.get("content")
+                    if content:
+                        yield content

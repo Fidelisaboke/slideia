@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from slideia.api.chat_routes import chat_router
 from slideia.api.routes import router as api_router
 from slideia.core.config import settings
 from slideia.core.logging import setup_logging
@@ -44,3 +45,4 @@ app.mount(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
