@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { Loader2, XCircle, CheckCircle2, Sparkles } from "lucide-react";
+import { XCircle, CheckCircle2, Sparkles } from "lucide-react";
 
 interface GenerationProgressProps {
   progress: number;
@@ -81,16 +81,6 @@ export default function GenerationProgress({
                 <Sparkles className="w-8 h-8" />
               )}
             </motion.div>
-
-            {currentStep !== "complete" && currentStep !== "error" && (
-              <motion.div
-                className="absolute -top-1 -right-1"
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <Loader2 className="w-5 h-5 text-secondary animate-spin" />
-              </motion.div>
-            )}
           </div>
 
           {/* Main Status */}
