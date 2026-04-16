@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import pytest
 from fastapi import FastAPI
@@ -28,7 +28,7 @@ def test_regenerate_slide_success(client):
         "theme": {"font": "Arial", "color": "#000000"}
     }
     
-    with patch("slideia.api.routes.llm.regenerate_slide", return_value=mock_result) as mock_llm:
+    with patch("slideia.api.routes.llm.regenerate_slide", new_callable=AsyncMock, return_value=mock_result) as mock_llm:
         response = client.post("/regenerate-slide", json=request_data)
         
         assert response.status_code == 200
@@ -49,7 +49,7 @@ def test_regenerate_slide_no_instruction(client):
     }
     mock_result = {"bullets": ["P1"], "notes": "N1", "image_prompt": "I1"}
     
-    with patch("slideia.api.routes.llm.regenerate_slide", return_value=mock_result):
+    with patch("slideia.api.routes.llm.regenerate_slide", new_callable=AsyncMock, return_value=mock_result):
         response = client.post("/regenerate-slide", json=request_data)
         assert response.status_code == 200
 
@@ -58,7 +58,7 @@ def test_regenerate_slide_error(client):
     """Test 500 error when LLM fails."""
     request_data = {"title": "T", "summary": "S"}
     
-    with patch("slideia.api.routes.llm.regenerate_slide", side_effect=Exception("LLM fail")):
+    with patch("slideia.api.routes.llm.regenerate_slide", new_callable=AsyncMock, side_effect=Exception("LLM fail")):
         response = client.post("/regenerate-slide", json=request_data)
         assert response.status_code == 500
         assert "Oops!" in response.json()["detail"]

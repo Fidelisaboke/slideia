@@ -1,3 +1,4 @@
+from typing import AsyncGenerator
 from pptx import Presentation
 from slideia.core.logging import get_logger
 from slideia.domain.deck.models import Deck, Slide
@@ -35,7 +36,7 @@ def create_minimal_template(path: str):
     prs.save(path)
 
 
-def generate_full_deck(
+async def generate_full_deck(
     topic: str,
     audience: str,
     tone: str,
@@ -52,7 +53,7 @@ def generate_full_deck(
 
     logger.info("Generating new deck...")
 
-    outline = llm.propose_outline(
+    outline = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
@@ -61,7 +62,7 @@ def generate_full_deck(
 
     slides_content = []
     for slide_spec in outline.get("slides", []):
-        slides_content.append(llm.draft_slide(slide_spec))
+        slides_content.append(await llm.draft_slide(slide_spec))
 
     logger.info("Deck generation complete!")
     result = {
@@ -76,3 +77,138 @@ def generate_full_deck(
         outline=outline,
         slides=[Slide(**s) for s in slides_content],
     )
+
+
+async def generate_full_deck_stream(
+    topic: str,
+    audience: str,
+    tone: str,
+    slide_count: int,
+    llm: OpenRouterLLM,
+    cache: Cache | RedisCache,
+) -> AsyncGenerator[dict, None]:
+    """
+    Generate a full deck and yield progress events.
+    """
+    cached = cache.get(topic, audience, tone, slide_count)
+    if cached:
+        logger.info("Serving cached deck via stream.")
+        yield {
+            "step": "complete",
+            "progress": 100,
+            "message": "Loaded from cache!",
+            "data": cached
+        }
+        return
+
+    logger.info("Starting streaming generation...")
+    
+    # Step 1: Outline
+    yield {
+        "step": "outline",
+        "progress": 10,
+        "message": "Analyzing topic and structuring the story..."
+    }
+    
+    outline = await llm.propose_outline(
+        topic=topic,
+        audience=audience,
+        tone=tone,
+        slide_count=slide_count,
+    )
+    
+    total_slides = len(outline.get("slides", []))
+    slides_content = []
+    
+    # Step 2: Slides
+    for i, slide_spec in enumerate(outline.get("slides", [])):
+        title = slide_spec.get("title", "Untitled Slide")
+        progress = 10 + int((i / total_slides) * 80)
+        
+        yield {
+            "step": "slide",
+            "index": i + 1,
+            "total": total_slides,
+            "title": title,
+            "progress": progress,
+            "message": f"Drafting slide {i + 1} of {total_slides}: {title}"
+        }
+        
+        slide_content = await llm.draft_slide(slide_spec)
+        slides_content.append(slide_content)
+
+    # Step 3: Complete
+    result = {
+        "outline": outline,
+        "slides": slides_content,
+    }
+    
+    cache.set(topic, audience, tone, slide_count, result)
+    
+    yield {
+        "step": "complete",
+        "progress": 100,
+        "message": "Presentation ready!",
+        "data": result
+    }
+
+
+async def propose_outline_stream(
+    topic: str,
+    audience: str,
+    tone: str,
+    slide_count: int,
+    llm: OpenRouterLLM,
+    cache: Cache | RedisCache,
+) -> AsyncGenerator[dict, None]:
+    """
+    Propose an outline and yield progress events.
+    """
+    # Check cache
+    cached = cache.get(topic, audience, tone, slide_count)
+    if cached:
+        logger.info("Serving cached outline via stream.")
+        yield {
+            "step": "complete",
+            "progress": 100,
+            "message": "Loaded from cache!",
+            "data": cached.get("outline", {})
+        }
+        return
+
+    logger.info("Starting streaming outline proposal...")
+    
+    yield {
+        "step": "outline",
+        "progress": 20,
+        "message": "Analyzing theme and context..."
+    }
+    
+    # We don't have sub-steps for LLM.propose_outline yet, 
+    # but we can simulate progress and use the async call.
+    yield {
+        "step": "outline",
+        "progress": 50,
+        "message": "Drafting structural framework..."
+    }
+    
+    outline = await llm.propose_outline(
+        topic=topic,
+        audience=audience,
+        tone=tone,
+        slide_count=slide_count,
+    )
+    
+    yield {
+        "step": "outline",
+        "progress": 90,
+        "message": "Finalizing presentation structure..."
+    }
+    
+    # We yield the final result
+    yield {
+        "step": "complete",
+        "progress": 100,
+        "message": "Outline complete!",
+        "data": outline
+    }

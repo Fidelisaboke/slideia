@@ -18,7 +18,7 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
     const [tone, setTone] = useState('');
     const [slideCount, setSlideCount] = useState(5);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (topic.trim() && audience.trim()) {
             onSubmit({ topic, audience, tone, slideCount});
@@ -126,7 +126,7 @@ return (
         </div>
 
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={isLoading || !topic.trim() || !audience.trim()}
           className="w-full gradient-button hover:shadow-lg hover:shadow-primary/20
                      disabled:opacity-50 disabled:cursor-not-allowed

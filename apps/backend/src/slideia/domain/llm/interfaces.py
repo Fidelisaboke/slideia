@@ -6,7 +6,7 @@ class OutlineGenerator(ABC):
     """Contract for proposing slide outlines."""
 
     @abstractmethod
-    def propose_outline(
+    async def propose_outline(
         self,
         topic: str,
         audience: str,
@@ -21,6 +21,6 @@ class SlideGenerator(ABC):
     """Contract for drafting slide content."""
 
     @abstractmethod
-    def draft_slide(self, slide_spec: Dict) -> Dict:
+    async def draft_slide(self, slide_spec: Dict) -> Dict:
         """Return drafted slide content."""
         pass

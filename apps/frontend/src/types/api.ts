@@ -78,3 +78,15 @@ export interface ApiError {
     error: string;
     message?: string;
 }
+
+// ── Streaming Progress ───────────────────────────────────────────────
+
+export interface GenerationProgressEvent {
+    step: 'outline' | 'slide' | 'complete' | 'error';
+    progress: number;
+    message: string;
+    index?: number;
+    total?: number;
+    title?: string;
+    data?: ProposeOutlineResponse | GenerateDeckResponse;
+}
