@@ -36,7 +36,15 @@ class DummyLLM:
         return self._outline
 
     async def draft_slide(self, slide_spec):
-        # Return next slide or a default
+        # This is now only used for single slide regeneration in production,
+        # but DummyLLM can keep it for simplicity.
+        return self._draft_one(slide_spec)
+
+    async def draft_slides_batch(self, topic, audience, slide_specs):
+        # Simulation of batch drafting
+        return {"slides": [self._draft_one(spec) for spec in slide_specs]}
+
+    def _draft_one(self, slide_spec):
         if self._slide_idx < len(self._slides):
             slide = self._slides[self._slide_idx]
             self._slide_idx += 1

@@ -24,3 +24,8 @@ class SlideGenerator(ABC):
     async def draft_slide(self, slide_spec: Dict) -> Dict:
         """Return drafted slide content."""
         pass
+
+    @abstractmethod
+    async def draft_slides_batch(self, topic: str, audience: str, slide_specs: list[Dict]) -> Dict:
+        """Return drafted content for multiple slides in one call."""
+        pass

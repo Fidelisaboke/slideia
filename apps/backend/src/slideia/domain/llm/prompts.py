@@ -25,7 +25,7 @@ OUTPUT FORMAT (valid JSON only):
   "citations": ["Source 1", "Source 2"]
 }}
 
-IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no extra text.
+IMPORTANT: Return ONLY valid JSON. No markdown, no explanations, no extra text. Do not wrap in ```json blocks.
 """
 
 
@@ -61,7 +61,7 @@ OUTPUT FORMAT (valid JSON only):
 }}
 
 CRITICAL RULES:
-- Return ONLY valid JSON
+- Return ONLY valid JSON. Do not wrap in markdown code blocks.
 """
 
 
@@ -99,6 +99,44 @@ OUTPUT FORMAT (valid JSON only):
 }}
 
 CRITICAL RULES:
-- Return ONLY valid JSON
+- Return ONLY valid JSON. Do not wrap in markdown code blocks.
 - Generate FRESH content that is different from the previous version
+"""
+
+
+BATCH_SLIDE_PROMPT = """Create content for multiple PowerPoint slides in one go.
+
+PRESENTATION CONTEXT:
+- Topic: {topic}
+- Audience: {audience}
+
+SLIDES TO DRAFT:
+{slides_specs}
+
+CONTENT REQUIREMENTS FOR EACH SLIDE:
+1. BULLET POINTS (3-5 bullets):
+   - Concise and actionable (max 10-12 words)
+   - Focus on key takeaways
+2. SPEAKER NOTES (2-3 sentences)
+3. IMAGE PROMPT (1 sentence)
+4. THEME (optional styling: font and color)
+
+OUTPUT FORMAT (valid JSON only):
+{{
+  "slides": [
+    {{
+      "title": "Slide Title",
+      "bullets": ["Bullet 1", "Bullet 2", ...],
+      "notes": "...",
+      "image_prompt": "...",
+      "theme": {{"font": "...", "color": "..."}}
+    }},
+    ...
+  ]
+}}
+
+CRITICAL RULES:
+- Return ONLY valid JSON.
+- Ensure the "slides" array matches the number and order of slides requested.
+- No markdown, no filler text.
 """

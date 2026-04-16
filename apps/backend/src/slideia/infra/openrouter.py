@@ -5,23 +5,43 @@ from collections.abc import AsyncGenerator
 import httpx
 from slideia.core.logging import get_logger
 from slideia.domain.llm.interfaces import OutlineGenerator, SlideGenerator
-from slideia.domain.llm.prompts import OUTLINE_PROMPT, SLIDE_PROMPT, REGENERATE_SLIDE_PROMPT
+from slideia.domain.llm.prompts import (
+    BATCH_SLIDE_PROMPT,
+    OUTLINE_PROMPT,
+    REGENERATE_SLIDE_PROMPT,
+    SLIDE_PROMPT,
+)
 
 logger = get_logger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
-def _extract_json_from_markdown(text: str | None) -> str:
+def _extract_json(text: str | None) -> str:
     if text is None:
         return ""
+
+    # Try to find a JSON block in markdown, looking for first valid one
     matches = re.findall(r"```json\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
     for match in matches:
         try:
-            json.loads(match)
+            json.loads(match.strip())
             return match.strip()
         except Exception:
             continue
+
+    # Fallback: find the first { and last } which covers cases where the model
+    # might add a preamble or conversational filler outside the JSON.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1:
+        candidate = text[start : end + 1].strip()
+        try:
+            json.loads(candidate)
+            return candidate
+        except Exception:
+            pass
+
     return text.strip()
 
 
@@ -56,17 +76,20 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
     async def _execute_call(self, prompt: str, max_tokens: int = 2048) -> dict:
         logger.info("Calling OpenRouter LLM...")
         async with httpx.AsyncClient(timeout=30.0) as client:
+            request_payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "response_format": {"type": "json_object"},
+            }
+
             response = await client.post(
                 OPENROUTER_API_URL,
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": max_tokens,
-                },
+                json=request_payload,
             )
 
             response.raise_for_status()
@@ -93,12 +116,16 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                     "OpenRouter returned null content. The model may have refused the request or encountered an error."
                 )
 
-            extracted = _extract_json_from_markdown(content)
+            extracted = _extract_json(content)
             if not extracted:
-                logger.error(f"Failed to extract JSON from: {content}")
-                raise ValueError("Failed to extract JSON from model response.")
+                logger.error(f"Failed to extract JSON from content: {content[:200]}...")
+                raise ValueError("The model response did not contain a valid JSON object.")
 
-            return json.loads(extracted)
+            try:
+                return json.loads(extracted)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing failed for extracted content: {extracted[:200]}...")
+                raise ValueError(f"Failed to parse JSON response: {e}")
 
     async def propose_outline(self, topic: str, audience: str, tone: str, slide_count: int) -> dict:
         prompt = OUTLINE_PROMPT.format(
@@ -115,6 +142,22 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             summary=slide_spec.get("summary", ""),
         )
         return await self._call(prompt)
+
+    async def draft_slides_batch(self, topic: str, audience: str, slide_specs: list[dict]) -> dict:
+        """Draft content for multiple slides in a single LLM call."""
+        specs_str = "\n".join(
+            [
+                f"SLIDE {i + 1}:\n- Title: {s.get('title')}\n- Purpose: {s.get('summary')}\n"
+                for i, s in enumerate(slide_specs)
+            ]
+        )
+        prompt = BATCH_SLIDE_PROMPT.format(
+            topic=topic,
+            audience=audience,
+            slides_specs=specs_str,
+        )
+        # Increase max_tokens for batch calls
+        return await self._call(prompt, max_tokens=4096)
 
     async def regenerate_slide(self, title: str, summary: str, instruction: str | None = None) -> dict:
         """Re-draft a slide's content, optionally guided by user instruction."""

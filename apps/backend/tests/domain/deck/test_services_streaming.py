@@ -8,6 +8,7 @@ def mock_llm():
     llm = MagicMock()
     llm.propose_outline = AsyncMock()
     llm.draft_slide = AsyncMock()
+    llm.draft_slides_batch = AsyncMock()
     return llm
 
 
@@ -25,7 +26,9 @@ async def test_generate_full_deck_stream_success(mock_llm, mock_cache):
         "title": "Test Presentation",
         "slides": [{"title": "Slide 1", "summary": "S1"}],
     }
-    mock_llm.draft_slide.return_value = {"bullets": ["B1"], "notes": "N1", "image_prompt": "P1"}
+    mock_llm.draft_slides_batch.return_value = {
+        "slides": [{"bullets": ["B1"], "notes": "N1", "image_prompt": "P1", "title": "Slide 1"}]
+    }
 
     events = []
     async for event in generate_full_deck_stream("T", "A", "Tone", 1, mock_llm, mock_cache):
