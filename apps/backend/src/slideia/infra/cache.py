@@ -27,15 +27,11 @@ class RedisCache:
         self._ttl_seconds = settings.CACHE_TTL_SECONDS
         self._client = redis.from_url(redis_url, decode_responses=True)
 
-    def _generate_key(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> str:
+    def _generate_key(self, topic: str, audience: str, tone: str, slide_count: int) -> str:
         raw = f"{topic}|{audience}|{tone}|{slide_count}"
         return f"deck:{hashlib.md5(raw.encode()).hexdigest()}"
 
-    def get(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> dict | None:
+    def get(self, topic: str, audience: str, tone: str, slide_count: int) -> dict | None:
         key = self._generate_key(topic, audience, tone, slide_count)
         try:
             value = self._client.get(key)
@@ -86,16 +82,12 @@ class Cache:
         self._cache: dict[str, tuple] = {}  # key -> (data, expiry_time)
         self._ttl_minutes = ttl_minutes
 
-    def _generate_key(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> str:
+    def _generate_key(self, topic: str, audience: str, tone: str, slide_count: int) -> str:
         """Generate cache key from request parameters."""
         data = f"{topic}|{audience}|{tone}|{slide_count}"
         return hashlib.md5(data.encode()).hexdigest()
 
-    def get(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> dict | None:
+    def get(self, topic: str, audience: str, tone: str, slide_count: int) -> dict | None:
         """Get cached data if it exists and hasn't expired."""
         key = self._generate_key(topic, audience, tone, slide_count)
 

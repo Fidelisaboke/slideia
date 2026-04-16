@@ -1,10 +1,8 @@
-'use client';
+"use client";
 
-import Navbar from '@/components/landing/Navbar';
-import Hero from '@/components/landing/Hero';
-import Features from '@/components/landing/Features';
-import HowItWorks from '@/components/landing/HowItWorks';
-import Footer from '@/components/landing/Footer';
+import Hero from "@/components/landing/Hero";
+import Features from "@/components/landing/Features";
+import HowItWorks from "@/components/landing/HowItWorks";
 
 interface LandingPageProps {
   onSubmit: (data: {
@@ -18,8 +16,7 @@ interface LandingPageProps {
 
 export default function LandingPage({ onSubmit, isLoading }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <div className="bg-background">
       <Hero onSubmit={onSubmit} isLoading={isLoading} />
 
       {/* Gradient divider */}
@@ -27,7 +24,6 @@ export default function LandingPage({ onSubmit, isLoading }: LandingPageProps) {
 
       <Features />
       <HowItWorks />
-      <Footer />
     </div>
   );
 }

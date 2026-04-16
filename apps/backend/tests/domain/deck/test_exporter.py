@@ -54,9 +54,7 @@ def temp_output_file():
 @pytest.fixture(scope="module")
 def clean_templates():
     # Remove generated template if it exists
-    template_dir = os.path.join(
-        os.path.dirname(__file__), "../../../../src/slideia/domain/deck/templates"
-    )
+    template_dir = os.path.join(os.path.dirname(__file__), "../../../../src/slideia/domain/deck/templates")
     template_path = os.path.join(template_dir, "base_template.pptx")
     if os.path.exists(template_path):
         os.remove(template_path)
@@ -87,9 +85,7 @@ async def test_export_slides_missing_input_raises(temp_output_file):
 
 
 @pytest.mark.asyncio
-async def test_export_slides_missing_template_creates_it(
-    temp_json_file, temp_output_file, clean_templates
-):
+async def test_export_slides_missing_template_creates_it(temp_json_file, temp_output_file, clean_templates):
     # Remove template if exists
     # Match the template path logic in exporter.py
     exporter_dir = os.path.abspath(

@@ -23,6 +23,7 @@ SECONDARY_COLOR = colors.HexColor("#10B981")  # Emerald 500
 TEXT_COLOR = colors.HexColor("#1F2937")  # Gray 800
 BG_COLOR = colors.HexColor("#FFFFFF")
 
+
 async def export_deck_to_pdf(input_path: str, output_path: str):
     """
     Export slides from a JSON file to a PDF file.
@@ -55,9 +56,9 @@ async def export_deck_to_pdf(input_path: str, output_path: str):
 def _draw_title_slide(c, data, width, height):
     """Draws the title slide."""
     # Background (optional accent)
-    c.setFillColor(colors.HexColor("#F9FAFB")) # Light gray bg
+    c.setFillColor(colors.HexColor("#F9FAFB"))  # Light gray bg
     c.rect(0, 0, width, height, fill=1, stroke=0)
-    
+
     # Accent bar at top
     c.setFillColor(PRIMARY_COLOR)
     c.rect(0, height - 10, width, 10, fill=1, stroke=0)
@@ -96,31 +97,31 @@ async def _draw_content_slide(c, s, slide_index, width, height):
     # Layout dimensions
     content_width = 6.5 * inch
     image_width = 3 * inch
-    
+
     # Summary & Bullets using Platypus Paragraphs for wrapping
     styles = getSampleStyleSheet()
-    
+
     # Custom Styles
     summary_style = ParagraphStyle(
-        'Summary',
-        parent=styles['Normal'],
-        fontName='Helvetica',
+        "Summary",
+        parent=styles["Normal"],
+        fontName="Helvetica",
         fontSize=14,
         textColor=TEXT_COLOR,
         leading=18,
-        spaceAfter=12
+        spaceAfter=12,
     )
-    
+
     bullet_style = ParagraphStyle(
-        'Bullet',
-        parent=styles['Normal'],
-        fontName='Helvetica',
+        "Bullet",
+        parent=styles["Normal"],
+        fontName="Helvetica",
         fontSize=16,
         textColor=TEXT_COLOR,
         leading=22,
         leftIndent=20,
         bulletIndent=5,
-        spaceAfter=8
+        spaceAfter=8,
     )
 
     current_y = height - 1.5 * inch
@@ -131,7 +132,7 @@ async def _draw_content_slide(c, s, slide_index, width, height):
         p = Paragraph(summary, summary_style)
         w, h = p.wrap(content_width, height)
         p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= (h + 12)
+        current_y -= h + 12
 
     # Draw Bullets
     bullets = s.get("bullets", [])
@@ -140,19 +141,19 @@ async def _draw_content_slide(c, s, slide_index, width, height):
         clean_text = bullet_text.strip()
         if not (clean_text.startswith("•") or clean_text.startswith("-")):
             clean_text = f"• {clean_text}"
-        
+
         p = Paragraph(clean_text, bullet_style)
         w, h = p.wrap(content_width, height)
         # Check if we run out of space (simplified)
         if current_y - h < 0.5 * inch:
             break
         p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= (h + 8)
+        current_y -= h + 8
 
     # Image Handling
     image_url = s.get("image_url")
     image_prompt = s.get("image_prompt", "")
-    
+
     if image_url:
         try:
             logger.info(f"Downloading image for PDF: {image_url}")
@@ -162,10 +163,17 @@ async def _draw_content_slide(c, s, slide_index, width, height):
                 img_data = BytesIO(response.content)
                 # Position image on the right
                 img_x = width - image_width - 0.5 * inch
-                img_y = height - 1.5 * inch - image_width # Keep it squareish or aspect ratio
-                
+                img_y = height - 1.5 * inch - image_width  # Keep it squareish or aspect ratio
+
                 # Draw image (checking size/aspect ratio would be better but let's start simple)
-                c.drawImage(reportlab_image_from_stream(img_data), img_x, img_y, width=image_width, preserveAspectRatio=True, mask='auto')
+                c.drawImage(
+                    reportlab_image_from_stream(img_data),
+                    img_x,
+                    img_y,
+                    width=image_width,
+                    preserveAspectRatio=True,
+                    mask="auto",
+                )
         except Exception as e:
             logger.warning(f"Failed to add image to PDF: {e}")
             _draw_image_placeholder(c, image_prompt, width, height, image_width)
@@ -177,18 +185,19 @@ def _draw_image_placeholder(c, prompt, width, height, img_w):
     """Draws a placeholder for an image."""
     img_x = width - img_w - 0.5 * inch
     img_y = height - 1.5 * inch - img_w
-    
+
     c.setStrokeColor(SECONDARY_COLOR)
     c.setDash(3, 3)
     c.rect(img_x, img_y, img_w, img_w, stroke=1, fill=0)
-    
+
     c.setFont("Helvetica-Oblique", 10)
     c.setFillColor(SECONDARY_COLOR)
-    c.drawCentredString(img_x + img_w/2, img_y + img_w/2, f"[Image: {prompt[:30]}...]")
+    c.drawCentredString(img_x + img_w / 2, img_y + img_w / 2, f"[Image: {prompt[:30]}...]")
     c.setDash()
 
 
 def reportlab_image_from_stream(stream):
     """Helper to convert stream to reportlab compatible image."""
     from reportlab.lib.utils import ImageReader
+
     return ImageReader(stream)

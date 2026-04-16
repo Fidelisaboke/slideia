@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Download, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2 } from "lucide-react";
 
 interface DownloadReadyProps {
   pptxUrl: string;
@@ -14,22 +14,25 @@ export default function DownloadReady({
   onReset,
 }: DownloadReadyProps) {
   const handleDownload = () => {
-    window.open(pptxUrl, '_blank');
+    window.open(pptxUrl, "_blank");
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 glass-panel glow-border rounded-2xl">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-14 h-14
-                        rounded-2xl bg-secondary/10 mb-4">
+        <div
+          className="inline-flex items-center justify-center w-14 h-14
+                        rounded-2xl bg-secondary/10 mb-4"
+        >
           <CheckCircle2 className="w-7 h-7 text-secondary" />
         </div>
         <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-2">
           Presentation Ready!
         </h2>
         <p className="text-muted-foreground">
-          Your presentation on <span className="font-semibold text-foreground">{topic}</span> has been
-          generated successfully.
+          Your presentation on{" "}
+          <span className="font-semibold text-foreground">{topic}</span> has
+          been generated successfully.
         </p>
       </div>
 

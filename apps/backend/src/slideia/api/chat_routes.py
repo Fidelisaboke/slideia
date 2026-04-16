@@ -141,9 +141,7 @@ async def chat_stream(
     try:
         request_data = json.loads(payload)
     except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=422, detail=f"Invalid JSON in 'payload' field: {exc}"
-        )
+        raise HTTPException(status_code=422, detail=f"Invalid JSON in 'payload' field: {exc}")
 
     try:
         chat_request = ChatRequest(**request_data)
@@ -171,18 +169,15 @@ async def chat_stream(
                 detail="Total uploaded file size exceeds the 10 MB limit.",
             )
 
-        file_contexts.append(
-            f"--- File: {upload.filename} ---\n{text}\n--- End of {upload.filename} ---"
-        )
+        file_contexts.append(f"--- File: {upload.filename} ---\n{text}\n--- End of {upload.filename} ---")
 
     # ── 4. Build the LLM message list ────────────────────────────────
     messages: list[dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
 
     # Inject file context into the system prompt if files are present
     if file_contexts:
-        file_block = (
-            "\n\nThe user has provided the following files for context:\n\n"
-            + "\n\n".join(file_contexts)
+        file_block = "\n\nThe user has provided the following files for context:\n\n" + "\n\n".join(
+            file_contexts
         )
         messages[0]["content"] += file_block
 

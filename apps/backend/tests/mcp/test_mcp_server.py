@@ -7,9 +7,7 @@ from slideia.mcp import server
 @pytest.mark.asyncio
 async def test_generate_pptx_tool_creates_file(tmp_path):
     # Patch export_slides to just create a file
-    with patch(
-        "slideia.mcp.server.export_slides", return_value=None
-    ) as mock_export:
+    with patch("slideia.mcp.server.export_slides", return_value=None) as mock_export:
         input_path = tmp_path / "input.json"
         output_path = tmp_path / "output.pptx"
         input_path.write_text("{}", encoding="utf-8")

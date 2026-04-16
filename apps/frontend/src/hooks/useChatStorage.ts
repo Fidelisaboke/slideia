@@ -6,10 +6,10 @@
  * of conversation IDs for enumeration.
  */
 
-import { Conversation } from '@/types/chat';
+import { Conversation } from "@/types/chat";
 
-const STORAGE_PREFIX = 'slideia_chat_';
-const INDEX_KEY = 'slideia_chat_index';
+const STORAGE_PREFIX = "slideia_chat_";
+const INDEX_KEY = "slideia_chat_index";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ function setIndex(ids: string[]): void {
   try {
     localStorage.setItem(INDEX_KEY, JSON.stringify(ids));
   } catch (err) {
-    console.error('[useChatStorage] Failed to write index:', err);
+    console.error("[useChatStorage] Failed to write index:", err);
   }
 }
 
@@ -47,7 +47,7 @@ export function saveConversation(conversation: Conversation): void {
     }
   } catch (err) {
     // localStorage quota exceeded or unavailable
-    console.error('[useChatStorage] Failed to save conversation:', err);
+    console.error("[useChatStorage] Failed to save conversation:", err);
   }
 }
 
@@ -61,9 +61,12 @@ export function loadConversation(id: string): Conversation | null {
   }
 }
 
-export function listConversations(): Pick<Conversation, 'id' | 'title' | 'updatedAt'>[] {
+export function listConversations(): Pick<
+  Conversation,
+  "id" | "title" | "updatedAt"
+>[] {
   const index = getIndex();
-  const summaries: Pick<Conversation, 'id' | 'title' | 'updatedAt'>[] = [];
+  const summaries: Pick<Conversation, "id" | "title" | "updatedAt">[] = [];
 
   for (const id of index) {
     const conv = loadConversation(id);
@@ -86,6 +89,6 @@ export function deleteConversation(id: string): void {
     const index = getIndex().filter((i) => i !== id);
     setIndex(index);
   } catch (err) {
-    console.error('[useChatStorage] Failed to delete conversation:', err);
+    console.error("[useChatStorage] Failed to delete conversation:", err);
   }
 }

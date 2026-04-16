@@ -3,7 +3,6 @@ import re
 from collections.abc import AsyncGenerator
 
 import httpx
-import requests
 from slideia.core.logging import get_logger
 from slideia.domain.llm.interfaces import OutlineGenerator, SlideGenerator
 from slideia.domain.llm.prompts import OUTLINE_PROMPT, SLIDE_PROMPT, REGENERATE_SLIDE_PROMPT
@@ -31,78 +30,93 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         self.api_key = api_key
         self.model = model
 
-    def _call(self, prompt: str, max_tokens: int = 1024) -> dict:
+    async def _call(self, prompt: str, max_tokens: int = 2048) -> dict:
+        """Call OpenRouter with exponential backoff for rate limits."""
+        max_retries = 3
+        base_delay = 2.0
+
+        for attempt in range(max_retries):
+            try:
+                return await self._execute_call(prompt, max_tokens)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt)
+                        logger.warning(
+                            f"Rate limit hit (429). Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        import asyncio
+
+                        await asyncio.sleep(delay)
+                        continue
+                raise
+        # This point should not be reached due to 'raise' above
+        raise RuntimeError("Max retries exceeded")
+
+    async def _execute_call(self, prompt: str, max_tokens: int = 2048) -> dict:
         logger.info("Calling OpenRouter LLM...")
-        response = requests.post(
-            OPENROUTER_API_URL,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens,
-            },
-            timeout=20,
-        )
-
-        response.raise_for_status()
-        resp_json = response.json()
-
-        # Check for choices and message
-        choices = resp_json.get("choices")
-        if not choices or not choices[0].get("message"):
-            logger.error(f"Invalid OpenRouter response structure: {resp_json}")
-            raise ValueError(
-                "OpenRouter returned an empty or invalid response structure."
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                OPENROUTER_API_URL,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                },
             )
 
-        message = choices[0]["message"]
-        content = message.get("content")
+            response.raise_for_status()
+            resp_json = response.json()
 
-        if content is None:
-            # Check for refusals (OpenRouter specific)
-            refusal = message.get("refusal")
-            if refusal:
-                logger.error(f"Model refusal: {refusal}")
-                raise ValueError(f"Model refused request: {refusal}")
+            # Check for choices and message
+            choices = resp_json.get("choices")
+            if not choices or not choices[0].get("message"):
+                logger.error(f"Invalid OpenRouter response structure: {resp_json}")
+                raise ValueError("OpenRouter returned an empty or invalid response structure.")
 
-            logger.error(
-                f"OpenRouter returned null content. Full response: {resp_json}"
-            )
-            raise ValueError(
-                "OpenRouter returned null content. The model may have refused the request or encountered an error."
-            )
+            message = choices[0]["message"]
+            content = message.get("content")
 
-        extracted = _extract_json_from_markdown(content)
-        if not extracted:
-            logger.error(f"Failed to extract JSON from: {content}")
-            raise ValueError("Failed to extract JSON from model response.")
+            if content is None:
+                # Check for refusals (OpenRouter specific)
+                refusal = message.get("refusal")
+                if refusal:
+                    logger.error(f"Model refusal: {refusal}")
+                    raise ValueError(f"Model refused request: {refusal}")
 
-        return json.loads(extracted)
+                logger.error(f"OpenRouter returned null content. Full response: {resp_json}")
+                raise ValueError(
+                    "OpenRouter returned null content. The model may have refused the request or encountered an error."
+                )
 
-    def propose_outline(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> dict:
+            extracted = _extract_json_from_markdown(content)
+            if not extracted:
+                logger.error(f"Failed to extract JSON from: {content}")
+                raise ValueError("Failed to extract JSON from model response.")
+
+            return json.loads(extracted)
+
+    async def propose_outline(self, topic: str, audience: str, tone: str, slide_count: int) -> dict:
         prompt = OUTLINE_PROMPT.format(
             topic=topic,
             audience=audience,
             tone=tone,
             slide_count=slide_count,
         )
-        return self._call(prompt)
+        return await self._call(prompt)
 
-    def draft_slide(self, slide_spec: dict) -> dict:
+    async def draft_slide(self, slide_spec: dict) -> dict:
         prompt = SLIDE_PROMPT.format(
             title=slide_spec.get("title", "Slide"),
             summary=slide_spec.get("summary", ""),
         )
-        return self._call(prompt)
+        return await self._call(prompt)
 
-    def regenerate_slide(
-        self, title: str, summary: str, instruction: str | None = None
-    ) -> dict:
+    async def regenerate_slide(self, title: str, summary: str, instruction: str | None = None) -> dict:
         """Re-draft a slide's content, optionally guided by user instruction."""
         if instruction:
             instruction_block = f"USER INSTRUCTION:\n{instruction}\n\nPlease incorporate the above instruction when generating the new content."
@@ -114,30 +128,40 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             summary=summary,
             instruction_block=instruction_block,
         )
-        return self._call(prompt)
+        return await self._call(prompt)
 
     async def stream_call(
         self,
         messages: list[dict[str, str]],
         max_tokens: int = 2048,
     ) -> AsyncGenerator[str, None]:
-        """Stream content deltas from OpenRouter.
+        """Stream content deltas from OpenRouter with retry logic for rate limits."""
+        max_retries = 3
+        base_delay = 2.0
 
-        Yields individual text chunks as they arrive.  The caller is
-        responsible for assembling them into a complete response.
+        for attempt in range(max_retries):
+            try:
+                async for chunk in self._execute_stream_call(messages, max_tokens):
+                    yield chunk
+                return  # Successfully finished streaming
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt)
+                        logger.warning(
+                            f"Rate limit hit (429) during stream initiation. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        import asyncio
 
-        Args:
-            messages: OpenAI-compatible message list
-                      (e.g. [{"role": "user", "content": "..."}]).
-            max_tokens: Upper bound on generated tokens.
+                        await asyncio.sleep(delay)
+                        continue
+                raise
 
-        Yields:
-            str: A content delta (possibly a single token or a few tokens).
-
-        Raises:
-            httpx.HTTPStatusError: On non-2xx responses from OpenRouter.
-            ValueError: If the stream contains an unrecoverable error event.
-        """
+    async def _execute_stream_call(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int = 2048,
+    ) -> AsyncGenerator[str, None]:
         logger.info("Starting streaming call to OpenRouter...")
 
         request_body = {
@@ -169,7 +193,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                     # Strip the "data: " prefix
                     if not line.startswith("data: "):
                         continue
-                    data_str = line[len("data: "):]
+                    data_str = line[len("data: ") :]
 
                     # OpenAI-compatible stream terminator
                     if data_str == "[DONE]":

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Core chat hook — manages messages, SSE streaming, and localStorage sync.
@@ -9,24 +9,21 @@
  *   - Automatic persistence via useChatStorage helpers
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  saveConversation,
-  loadConversation,
-} from '@/hooks/useChatStorage';
+import { saveConversation, loadConversation } from "@/hooks/useChatStorage";
 import {
   ChatMessage,
   Conversation,
   FileAttachment,
   FileAttachmentMeta,
   StreamEvent,
-} from '@/types/chat';
+} from "@/types/chat";
 
 // ── Constants ────────────────────────────────────────────────────────
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -46,7 +43,7 @@ interface UseChatReturn {
 
 export function useChat(initialConversationId?: string): UseChatReturn {
   const [conversationId] = useState<string>(
-    () => initialConversationId || generateId()
+    () => initialConversationId || generateId(),
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -68,7 +65,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
 
     const conversation: Conversation = {
       id: conversationId,
-      title: messages[0]?.content.slice(0, 60) || 'New Chat',
+      title: messages[0]?.content.slice(0, 60) || "New Chat",
       messages,
       createdAt: messages[0]?.timestamp || Date.now(),
       updatedAt: Date.now(),
@@ -100,7 +97,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
 
       const userMessage: ChatMessage = {
         id: generateId(),
-        role: 'user',
+        role: "user",
         content: prompt,
         attachments: fileMeta.length > 0 ? fileMeta : undefined,
         timestamp: Date.now(),
@@ -109,8 +106,8 @@ export function useChat(initialConversationId?: string): UseChatReturn {
       // 2. Create the placeholder assistant message
       const assistantMessage: ChatMessage = {
         id: generateId(),
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         timestamp: Date.now(),
         isStreaming: true,
       };
@@ -130,9 +127,9 @@ export function useChat(initialConversationId?: string): UseChatReturn {
       });
 
       const formData = new FormData();
-      formData.append('payload', payload);
+      formData.append("payload", payload);
       for (const file of files || []) {
-        formData.append('files', file.file);
+        formData.append("files", file.file);
       }
 
       // 4. Stream the response
@@ -141,25 +138,25 @@ export function useChat(initialConversationId?: string): UseChatReturn {
 
       try {
         const response = await fetch(`${API_BASE_URL}/chat/stream`, {
-          method: 'POST',
+          method: "POST",
           body: formData,
           signal: abortController.signal,
         });
 
         if (!response.ok) {
-          const errorBody = await response.text().catch(() => '');
+          const errorBody = await response.text().catch(() => "");
           throw new Error(
-            `Server error (${response.status}): ${errorBody || response.statusText}`
+            `Server error (${response.status}): ${errorBody || response.statusText}`,
           );
         }
 
         const reader = response.body?.getReader();
         if (!reader) {
-          throw new Error('Response body is not readable');
+          throw new Error("Response body is not readable");
         }
 
         const decoder = new TextDecoder();
-        let buffer = '';
+        let buffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -168,13 +165,13 @@ export function useChat(initialConversationId?: string): UseChatReturn {
           buffer += decoder.decode(value, { stream: true });
 
           // Parse SSE lines
-          const lines = buffer.split('\n');
+          const lines = buffer.split("\n");
           // Keep the last potentially incomplete line in the buffer
-          buffer = lines.pop() || '';
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
 
             const dataStr = trimmed.slice(6);
 
@@ -185,12 +182,12 @@ export function useChat(initialConversationId?: string): UseChatReturn {
               continue;
             }
 
-            if ('token' in event) {
+            if ("token" in event) {
               // Append token to the assistant message
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
-                if (last && last.role === 'assistant' && last.isStreaming) {
+                if (last && last.role === "assistant" && last.isStreaming) {
                   updated[updated.length - 1] = {
                     ...last,
                     content: last.content + event.token,
@@ -198,14 +195,14 @@ export function useChat(initialConversationId?: string): UseChatReturn {
                 }
                 return updated;
               });
-            } else if ('error' in event) {
+            } else if ("error" in event) {
               setError(event.error);
-            } else if ('done' in event) {
+            } else if ("done" in event) {
               // Mark streaming complete
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
-                if (last && last.role === 'assistant') {
+                if (last && last.role === "assistant") {
                   updated[updated.length - 1] = {
                     ...last,
                     isStreaming: false,
@@ -221,29 +218,29 @@ export function useChat(initialConversationId?: string): UseChatReturn {
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
-          if (last && last.role === 'assistant' && last.isStreaming) {
+          if (last && last.role === "assistant" && last.isStreaming) {
             updated[updated.length - 1] = { ...last, isStreaming: false };
           }
           return updated;
         });
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
+        if (err instanceof DOMException && err.name === "AbortError") {
           // User navigated away or explicitly cancelled — not an error
           return;
         }
 
         const message =
-          err instanceof Error ? err.message : 'An unexpected error occurred';
+          err instanceof Error ? err.message : "An unexpected error occurred";
         setError(message);
 
         // Mark assistant message as failed
         setMessages((prev) => {
           const updated = [...prev];
           const last = updated[updated.length - 1];
-          if (last && last.role === 'assistant' && last.isStreaming) {
+          if (last && last.role === "assistant" && last.isStreaming) {
             updated[updated.length - 1] = {
               ...last,
-              content: last.content || 'Failed to get a response.',
+              content: last.content || "Failed to get a response.",
               isStreaming: false,
             };
           }
@@ -254,7 +251,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
         abortRef.current = null;
       }
     },
-    [isStreaming, messages]
+    [isStreaming, messages],
   );
 
   // ── Clear the chat ───────────────────────────────────────────────

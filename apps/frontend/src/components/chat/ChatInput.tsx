@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import { useCallback, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
-import { FileAttachment } from '@/types/chat';
-import { Button } from '@/components/ui/button';
-import { Paperclip, Send, X, FileText } from 'lucide-react';
+import {
+  useCallback,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
+import { FileAttachment } from "@/types/chat";
+import { Button } from "@/components/ui/button";
+import { Paperclip, Send, X, FileText } from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────────────
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = new Set([
-  'text/plain',
-  'text/markdown',
-  'text/csv',
-  'application/json',
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+  "application/json",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
 // ── Props ────────────────────────────────────────────────────────────
@@ -39,8 +45,11 @@ function formatFileSize(bytes: number): string {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function ChatInput({ onSend, disabled = false }: ChatInputProps) {
-  const [input, setInput] = useState('');
+export default function ChatInput({
+  onSend,
+  disabled = false,
+}: ChatInputProps) {
+  const [input, setInput] = useState("");
   const [files, setFiles] = useState<FileAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -52,7 +61,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   const handleInput = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, []);
 
@@ -77,7 +86,9 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           continue;
         }
         // Prevent duplicates by name+size
-        if (combined.some((f) => f.name === file.name && f.size === file.size)) {
+        if (
+          combined.some((f) => f.name === file.name && f.size === file.size)
+        ) {
           continue;
         }
         combined.push({
@@ -91,7 +102,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
 
       setFiles(combined);
     },
-    [files]
+    [files],
   );
 
   const removeFile = useCallback((id: string) => {
@@ -121,7 +132,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
         addFiles(e.dataTransfer.files);
       }
     },
-    [addFiles]
+    [addFiles],
   );
 
   // ── Submit ───────────────────────────────────────────────────────
@@ -130,24 +141,24 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
     if (!trimmed || disabled) return;
 
     onSend(trimmed, files.length > 0 ? files : undefined);
-    setInput('');
+    setInput("");
     setFiles([]);
     setFileError(null);
 
     // Reset textarea height
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
     }
   }, [input, files, disabled, onSend]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
       }
     },
-    [handleSubmit]
+    [handleSubmit],
   );
 
   const canSend = input.trim().length > 0 && !disabled;
@@ -191,18 +202,17 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
         className={`
           relative flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-lg
           transition-all duration-200
-          ${isDragging
-            ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
-            : 'border-border hover:border-primary/20'
+          ${
+            isDragging
+              ? "border-primary ring-2 ring-primary/20 bg-primary/5"
+              : "border-border hover:border-primary/20"
           }
         `}
       >
         {/* Drag overlay */}
         {isDragging && (
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-primary/5 backdrop-blur-[1px] z-10 pointer-events-none">
-            <p className="text-sm font-medium text-primary">
-              Drop files here
-            </p>
+            <p className="text-sm font-medium text-primary">Drop files here</p>
           </div>
         )}
 
@@ -228,7 +238,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           accept=".txt,.md,.csv,.json,.pdf,.docx"
           onChange={(e) => {
             if (e.target.files) addFiles(e.target.files);
-            e.target.value = ''; // allow re-selecting the same file
+            e.target.value = ""; // allow re-selecting the same file
           }}
         />
 
@@ -255,9 +265,10 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           size="icon"
           className={`
             shrink-0 h-9 w-9 rounded-xl transition-all duration-200
-            ${canSend
-              ? 'gradient-button text-white shadow-md shadow-primary/20 hover:shadow-lg hover:scale-105'
-              : 'bg-muted text-muted-foreground'
+            ${
+              canSend
+                ? "gradient-button text-white shadow-md shadow-primary/20 hover:shadow-lg hover:scale-105"
+                : "bg-muted text-muted-foreground"
             }
           `}
           onClick={handleSubmit}

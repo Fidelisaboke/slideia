@@ -50,7 +50,7 @@ def test_export_pptx_success(client, full_deck_request, tmp_path):
     ):
         mock_settings.DOWNLOADS_DIR = tmp_path
         response = client.post("/export-pptx", json=full_deck_request)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "download_url" in data and data["download_url"].endswith(".pptx")
@@ -62,7 +62,7 @@ def test_export_pptx_success(client, full_deck_request, tmp_path):
 def test_export_pptx_invalid_request(client):
     """Test missing required fields returns 422."""
     # slides is now required
-    bad_req = {"topic": "AI", "audience": "All"} 
+    bad_req = {"topic": "AI", "audience": "All"}
     response = client.post("/export-pptx", json=bad_req)
     assert response.status_code == 422
 

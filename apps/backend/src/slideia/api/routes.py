@@ -3,7 +3,8 @@ import json
 import os
 import tempfile
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from slideia.api.schemas import (
     DeckRequest,
     FullDeckExportRequest,
@@ -14,7 +15,13 @@ from slideia.core.config import settings
 from slideia.core.logging import get_logger
 from slideia.domain.deck.exporter import export_slides
 from slideia.domain.deck.pdf_exporter import export_deck_to_pdf
-from slideia.domain.deck.services import Cache, RedisCache, generate_full_deck
+from slideia.domain.deck.services import (
+    Cache,
+    RedisCache,
+    generate_full_deck,
+    generate_full_deck_stream,
+    propose_outline_stream,
+)
 from slideia.infra.image_fetcher import ImageFetcher
 from slideia.infra.openrouter import OpenRouterLLM
 
@@ -27,13 +34,11 @@ if settings.ENVIRONMENT == "test":
 else:
     cache = RedisCache()
 
-llm = OpenRouterLLM(
-    api_key=settings.OPENROUTER_API_KEY, model=settings.OPENROUTER_MODEL
-)
+llm = OpenRouterLLM(api_key=settings.OPENROUTER_API_KEY, model=settings.OPENROUTER_MODEL)
 
 
 @router.post("/propose-outline")
-def generate_outline(request: ProposeOutlineRequest) -> dict:
+async def generate_outline(request: ProposeOutlineRequest) -> dict:
     """
     Propose a slide outline for a presentation.
 
@@ -51,7 +56,7 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
             f"audience='{request.audience}', slides={request.slide_count}"
         )
         # Use cached deck if available
-        deck = generate_full_deck(
+        deck = await generate_full_deck(
             request.topic,
             request.audience,
             request.tone,
@@ -61,33 +66,46 @@ def generate_outline(request: ProposeOutlineRequest) -> dict:
         )
 
         # Return only the outline to the user
-        logger.info(
-            f"Outline generated successfully with {len(deck.outline.get('slides', []))} slides"
-        )
+        logger.info(f"Outline generated successfully with {len(deck.outline.get('slides', []))} slides")
         return deck.outline
 
     except Exception as e:
         logger.error(str(e))
-        raise HTTPException(
-            status_code=500, detail="Oops! Something went wrong on our end."
-        )
+        raise HTTPException(status_code=500, detail="Oops! Something went wrong on our end.")
+
+
+@router.post("/propose-outline/stream")
+async def propose_outline_stream_route(request_data: ProposeOutlineRequest, request: Request):
+    """
+    Propose an outline and stream progress updates via SSE.
+    """
+
+    async def sse_generator():
+        try:
+            generator = propose_outline_stream(
+                request_data.topic,
+                request_data.audience,
+                request_data.tone,
+                request_data.slide_count,
+                llm,
+                cache,
+            )
+            async for event in generator:
+                if await request.is_disconnected():
+                    logger.info("Client disconnected, stopping outline generation.")
+                    break
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
+            logger.error(f"Error in outline generation stream: {e}")
+            yield f"data: {json.dumps({'step': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
 
 @router.post("/generate-deck")
-def generate_deck(request: DeckRequest):
+async def generate_deck(request: DeckRequest):
     """
     Generate a full slide deck by first proposing an outline and then drafting each slide.
-
-    Request JSON:
-        {"topic": str, "audience": str, "tone": str, "slide_count": int}
-
-    Response JSON:
-        {
-            "outline": {"title": str, "slides": [ ... ], ...},
-            "slides": [ {"bullets": [...], "notes": str, "image_prompt": str, "theme": dict}, ... ]
-        }
-
-    Returns HTTP 500 with error message if LLM call fails.
     """
     try:
         logger.info(
@@ -95,7 +113,7 @@ def generate_deck(request: DeckRequest):
             f"audience='{request.audience}', slides={request.slide_count}"
         )
         # Use cached deck if available
-        deck = generate_full_deck(
+        deck = await generate_full_deck(
             request.topic,
             request.audience,
             request.tone,
@@ -109,30 +127,49 @@ def generate_deck(request: DeckRequest):
 
     except Exception as e:
         logger.error(str(e))
-        raise HTTPException(
-            status_code=500, detail="Oops! Something went wrong on our end."
-        )
+        raise HTTPException(status_code=500, detail="Oops! Something went wrong on our end.")
+
+
+@router.post("/generate-deck/stream")
+async def generate_deck_stream(request_data: DeckRequest, request: Request):
+    """
+    Generate a full slide deck and stream progress updates via SSE.
+    """
+
+    async def sse_generator():
+        try:
+            generator = generate_full_deck_stream(
+                request_data.topic,
+                request_data.audience,
+                request_data.tone,
+                request_data.slide_count,
+                llm,
+                cache,
+            )
+            async for event in generator:
+                # Check for disconnection
+                if await request.is_disconnected():
+                    logger.info("Client disconnected, stopping generation.")
+                    break
+
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
+            logger.error(f"Error in generation stream: {e}")
+            yield f"data: {json.dumps({'step': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
 
 @router.post("/regenerate-slide")
-def regenerate_slide(request: RegenerateSlideRequest):
+async def regenerate_slide(request: RegenerateSlideRequest):
     """
     Regenerate a single slide's content using the LLM.
-
-    Request JSON:
-        {"title": str, "summary": str, "instruction": str | None}
-
-    Response JSON:
-        {"bullets": [...], "notes": str, "image_prompt": str, "theme": dict}
-
-    Returns HTTP 500 with error message if LLM call fails.
     """
     try:
         logger.info(
-            f"Regenerating slide: title='{request.title}', "
-            f"instruction='{request.instruction or 'none'}'"
+            f"Regenerating slide: title='{request.title}', instruction='{request.instruction or 'none'}'"
         )
-        result = llm.regenerate_slide(
+        result = await llm.regenerate_slide(
             title=request.title,
             summary=request.summary,
             instruction=request.instruction,
@@ -142,9 +179,7 @@ def regenerate_slide(request: RegenerateSlideRequest):
 
     except Exception as e:
         logger.error(str(e))
-        raise HTTPException(
-            status_code=500, detail="Oops! Something went wrong on our end."
-        )
+        raise HTTPException(status_code=500, detail="Oops! Something went wrong on our end.")
 
 
 @router.post("/export-pptx")
@@ -218,9 +253,7 @@ async def export_pptx(request: FullDeckExportRequest):
             json.dump(deck_data, tmp_json, indent=2)
 
         # Generate filename
-        safe_topic = "".join(
-            c for c in request.topic if c.isalnum() or c in (" ", "-", "_")
-        ).strip()
+        safe_topic = "".join(c for c in request.topic if c.isalnum() or c in (" ", "-", "_")).strip()
         safe_topic = safe_topic.replace(" ", "_")[:50]
         if not safe_topic:
             safe_topic = "presentation"
@@ -242,9 +275,7 @@ async def export_pptx(request: FullDeckExportRequest):
 
     except Exception as e:
         logger.error(str(e))
-        raise HTTPException(
-            status_code=500, detail="Oops! Something went wrong on our end."
-        )
+        raise HTTPException(status_code=500, detail="Oops! Something went wrong on our end.")
 
     finally:
         if json_path and os.path.exists(json_path):
@@ -308,9 +339,7 @@ async def export_pdf(request: FullDeckExportRequest):
             json.dump(deck_data, tmp_json, indent=2)
 
         # Generate filename
-        safe_topic = "".join(
-            c for c in request.topic if c.isalnum() or c in (" ", "-", "_")
-        ).strip()
+        safe_topic = "".join(c for c in request.topic if c.isalnum() or c in (" ", "-", "_")).strip()
         safe_topic = safe_topic.replace(" ", "_")[:50]
         if not safe_topic:
             safe_topic = "presentation"

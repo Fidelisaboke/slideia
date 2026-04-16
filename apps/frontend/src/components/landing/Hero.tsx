@@ -1,12 +1,8 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
-import SlideForm from '@/components/SlideForm';
-import {
-  fadeInUp,
-  fadeInRight,
-  staggerContainer,
-} from '@/lib/motion';
+import { motion } from "motion/react";
+import SlideForm from "@/components/SlideForm";
+import { fadeInUp, fadeInRight, staggerContainer } from "@/lib/motion";
 
 interface HeroProps {
   onSubmit: (data: {
@@ -48,26 +44,23 @@ export default function Hero({ onSubmit, isLoading }: HeroProps) {
           </div>
 
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-(family-name:--font-sora) leading-tight mb-6">
-            From{' '}
-            <span className="gradient-text">Idea</span>{' '}
-            to Slide Deck{' '}
+            From <span className="gradient-text">Idea</span> to Slide Deck{" "}
             <br className="hidden sm:block" />
-            in{' '}
-            <span className="gradient-text">Seconds</span>
+            in <span className="gradient-text">Seconds</span>
           </h2>
 
           <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-8 max-w-lg">
             Describe your topic. Slideia generates structured, professional
-            presentations with speaker notes, themes, and PowerPoint export
-            — ready in under a minute.
+            presentations with speaker notes, themes, and PowerPoint export —
+            ready in under a minute.
           </p>
 
           {/* Social proof badges */}
           <div className="flex flex-wrap gap-4">
             {[
-              { icon: '⚡', label: 'Lightning Fast' },
-              { icon: '🎯', label: 'Structured Output' },
-              { icon: '📥', label: '.pptx Export' },
+              { icon: "⚡", label: "Lightning Fast" },
+              { icon: "🎯", label: "Structured Output" },
+              { icon: "📥", label: ".pptx Export" },
             ].map((badge) => (
               <span
                 key={badge.label}

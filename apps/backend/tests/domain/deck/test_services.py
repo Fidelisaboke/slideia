@@ -32,10 +32,10 @@ class DummyLLM:
         ]
         self._slide_idx = 0
 
-    def propose_outline(self, topic, audience, tone, slide_count):
+    async def propose_outline(self, topic, audience, tone, slide_count):
         return self._outline
 
-    def draft_slide(self, slide_spec):
+    async def draft_slide(self, slide_spec):
         # Return next slide or a default
         if self._slide_idx < len(self._slides):
             slide = self._slides[self._slide_idx]
@@ -65,10 +65,11 @@ class DummyCache:
         self._store[args[:-1]] = args[-1]
 
 
-def test_generate_full_deck_new_generation():
+@pytest.mark.asyncio
+async def test_generate_full_deck_new_generation():
     llm = DummyLLM()
     cache = DummyCache()
-    deck = generate_full_deck("topic", "audience", "tone", 2, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 2, llm, cache)
     assert isinstance(deck, Deck)
     assert deck.outline["title"] == "Test Deck"
     assert len(deck.outline["slides"]) == 2
@@ -78,7 +79,8 @@ def test_generate_full_deck_new_generation():
     assert cache.get_called
 
 
-def test_generate_full_deck_uses_cache():
+@pytest.mark.asyncio
+async def test_generate_full_deck_uses_cache():
     llm = DummyLLM()
     cache = DummyCache()
     # Pre-populate cache
@@ -95,7 +97,7 @@ def test_generate_full_deck_uses_cache():
         ],
     }
     cache._store[("topic", "audience", "tone", 1)] = cached
-    deck = generate_full_deck("topic", "audience", "tone", 1, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache)
     assert deck.outline["title"] == "Cached Deck"
     assert len(deck.slides) == 1
     assert deck.slides[0].title == "C1"
@@ -104,15 +106,17 @@ def test_generate_full_deck_uses_cache():
     assert not cache.set_called
 
 
-def test_generate_full_deck_empty_outline():
+@pytest.mark.asyncio
+async def test_generate_full_deck_empty_outline():
     llm = DummyLLM(outline={"title": "Empty", "slides": []}, slides=[])
     cache = DummyCache()
-    deck = generate_full_deck("topic", "audience", "tone", 0, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 0, llm, cache)
     assert deck.outline["slides"] == []
     assert deck.slides == []
 
 
-def test_generate_full_deck_slide_type_handling():
+@pytest.mark.asyncio
+async def test_generate_full_deck_slide_type_handling():
     # Slide with missing fields, type mismatches
     llm = DummyLLM(
         outline={"title": "Deck", "slides": [{"title": 123, "summary": None}]},
@@ -127,7 +131,7 @@ def test_generate_full_deck_slide_type_handling():
         ],
     )
     cache = DummyCache()
-    deck = generate_full_deck("topic", "audience", "tone", 1, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache)
     assert isinstance(deck, Deck)
     assert isinstance(deck.slides[0], Slide)
     assert str(deck.slides[0].title) == "123"

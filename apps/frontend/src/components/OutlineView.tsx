@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { ProposeOutlineResponse } from '@/types/api';
-import { GraduationCap, Users, Sparkles } from 'lucide-react';
+import { ProposeOutlineResponse } from "@/types/api";
+import { GraduationCap, Users, Sparkles } from "lucide-react";
 
 interface OutlineViewProps {
   outline: ProposeOutlineResponse;
@@ -41,8 +41,15 @@ export default function OutlineView({
               <GraduationCap className="w-4 h-4" />
             </span>
             <div>
-              <span className="text-xs text-muted-foreground font-medium">Topic</span>
-              <div className="text-sm text-foreground font-semibold truncate max-w-xs" title={topic}>{topic}</div>
+              <span className="text-xs text-muted-foreground font-medium">
+                Topic
+              </span>
+              <div
+                className="text-sm text-foreground font-semibold truncate max-w-xs"
+                title={topic}
+              >
+                {topic}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -50,8 +57,15 @@ export default function OutlineView({
               <Users className="w-4 h-4" />
             </span>
             <div>
-              <span className="text-xs text-muted-foreground font-medium">Audience</span>
-              <div className="text-sm text-foreground font-semibold truncate max-w-xs" title={audience}>{audience}</div>
+              <span className="text-xs text-muted-foreground font-medium">
+                Audience
+              </span>
+              <div
+                className="text-sm text-foreground font-semibold truncate max-w-xs"
+                title={audience}
+              >
+                {audience}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -59,8 +73,15 @@ export default function OutlineView({
               <Sparkles className="w-4 h-4" />
             </span>
             <div>
-              <span className="text-xs text-muted-foreground font-medium">Tone</span>
-              <div className="text-sm text-foreground font-semibold capitalize truncate max-w-xs" title={tone}>{tone}</div>
+              <span className="text-xs text-muted-foreground font-medium">
+                Tone
+              </span>
+              <div
+                className="text-sm text-foreground font-semibold capitalize truncate max-w-xs"
+                title={tone}
+              >
+                {tone}
+              </div>
             </div>
           </div>
         </div>
@@ -139,7 +160,7 @@ export default function OutlineView({
             Generating Full Deck...
           </span>
         ) : (
-          '✨ Generate Complete Deck'
+          "✨ Generate Complete Deck"
         )}
       </button>
     </div>
