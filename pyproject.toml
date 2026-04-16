@@ -1,6 +1,6 @@
 [project]
 name = "slideia-workspace"
-version = "0.5.1"
+version = "0.6.0"
 description = "Python workspace for Slideia"
 authors = [{ name = "Fidelisaboke" }]
 requires-python = ">=3.11"

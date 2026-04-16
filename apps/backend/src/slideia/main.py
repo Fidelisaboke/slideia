@@ -21,7 +21,13 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="slideia API", version="0.5.1", lifespan=lifespan)
+app = FastAPI(
+    title="slideia API",
+    version="0.6.0",
+    lifespan=lifespan,
+    docs_url=None if settings.ENVIRONMENT == "production" else "/docs",
+    redoc_url=None if settings.ENVIRONMENT == "production" else "/redoc",
+)
 
 # CORS Configuration
 app.add_middleware(
