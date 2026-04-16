@@ -1,5 +1,7 @@
+import asyncio
 from typing import AsyncGenerator
 from pptx import Presentation
+from slideia.core.config import settings
 from slideia.core.logging import get_logger
 from slideia.domain.deck.models import Deck, Slide
 from slideia.infra.cache import Cache, RedisCache
@@ -60,9 +62,23 @@ async def generate_full_deck(
         slide_count=slide_count,
     )
 
-    slides_content = []
-    for slide_spec in outline.get("slides", []):
-        slides_content.append(await llm.draft_slide(slide_spec))
+    # Use Semaphore to limit concurrent calls to respect rate limits
+    semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_LLM_CALLS)
+    batch_size = 3
+    slide_specs = outline.get("slides", [])
+    batches = [slide_specs[i : i + batch_size] for i in range(0, len(slide_specs), batch_size)]
+
+    async def process_batch(batch):
+        async with semaphore:
+            result = await llm.draft_slides_batch(topic, audience, batch)
+            return result.get("slides", [])
+
+    logger.info(f"Drafting {len(slide_specs)} slides in {len(batches)} batches...")
+    tasks = [process_batch(b) for b in batches]
+    results = await asyncio.gather(*tasks)
+
+    # Flatten results
+    slides_content = [slide for batch_result in results for slide in batch_result]
 
     logger.info("Deck generation complete!")
     result = {
@@ -108,25 +124,43 @@ async def generate_full_deck_stream(
         slide_count=slide_count,
     )
 
-    total_slides = len(outline.get("slides", []))
-    slides_content = []
+    slide_specs = outline.get("slides", [])
+    total_slides = len(slide_specs)
+    slides_content = [None] * total_slides
+    slides_processed = 0
 
-    # Step 2: Slides
-    for i, slide_spec in enumerate(outline.get("slides", [])):
-        title = slide_spec.get("title", "Untitled Slide")
-        progress = 10 + int((i / total_slides) * 80)
+    # Step 2: Slides (Batched and Parallel)
+    semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_LLM_CALLS)
+    batch_size = 3
+    batches = [slide_specs[i : i + batch_size] for i in range(0, len(slide_specs), batch_size)]
 
-        yield {
-            "step": "slide",
-            "index": i + 1,
-            "total": total_slides,
-            "title": title,
-            "progress": progress,
-            "message": f"Drafting slide {i + 1} of {total_slides}: {title}",
-        }
+    async def process_batch_with_progress(batch, start_idx):
+        async with semaphore:
+            result = await llm.draft_slides_batch(topic, audience, batch)
+            return result.get("slides", []), start_idx
 
-        slide_content = await llm.draft_slide(slide_spec)
-        slides_content.append(slide_content)
+    tasks = [process_batch_with_progress(b, i * batch_size) for i, b in enumerate(batches)]
+
+    for future in asyncio.as_completed(tasks):
+        batch_slides, batch_start = await future
+        for j, slide in enumerate(batch_slides):
+            idx = batch_start + j
+            if idx < total_slides:
+                slides_content[idx] = slide
+                slides_processed += 1
+                progress = 10 + int((slides_processed / total_slides) * 80)
+
+                yield {
+                    "step": "slide",
+                    "index": idx + 1,
+                    "total": total_slides,
+                    "title": slide.get("title", "Untitled"),
+                    "progress": progress,
+                    "message": f"Drafted slide {slides_processed} of {total_slides}: {slide.get('title')}",
+                }
+
+    # Ensure all slots are filled (in case of model errors we could have None)
+    slides_content = [s for s in slides_content if s is not None]
 
     # Step 3: Complete
     result = {

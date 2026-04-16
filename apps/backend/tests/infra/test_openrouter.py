@@ -1,34 +1,34 @@
 import pytest
 import httpx
-from unittest.mock import patch, AsyncMock, MagicMock
-from slideia.infra.openrouter import OpenRouterLLM, _extract_json_from_markdown
+from unittest.mock import AsyncMock, MagicMock, patch
+from slideia.infra.openrouter import OpenRouterLLM, _extract_json
 
 # --- Tests for _extract_json_from_markdown ---
 
 
 def test_extract_json_pure_json():
     text = '{"title": "Test"}'
-    assert _extract_json_from_markdown(text) == text
+    assert _extract_json(text) == text
 
 
 def test_extract_json_markdown_block():
     text = 'Here is the result:\n```json\n{"title": "Test"}\n```\nHope it helps!'
-    assert _extract_json_from_markdown(text) == '{"title": "Test"}'
+    assert _extract_json(text) == '{"title": "Test"}'
 
 
 def test_extract_json_markdown_case_insensitive():
     text = '```JSON\n{"a": 1}\n```'
-    assert _extract_json_from_markdown(text) == '{"a": 1}'
+    assert _extract_json(text) == '{"a": 1}'
 
 
 def test_extract_json_empty():
-    assert _extract_json_from_markdown(None) == ""
-    assert _extract_json_from_markdown("") == ""
+    assert _extract_json(None) == ""
+    assert _extract_json("") == ""
 
 
 def test_extract_json_invalid_then_valid():
     text = '```json\n{invalid}\n```\n```json\n{"valid": true}\n```'
-    assert _extract_json_from_markdown(text) == '{"valid": true}'
+    assert _extract_json(text) == '{"valid": true}'
 
 
 # --- Tests for OpenRouterLLM ---
@@ -159,3 +159,17 @@ async def test_llm_stream_call_retry(llm):
             async for chunk in llm.stream_call([{"role": "user", "content": "hi"}]):
                 chunks.append(chunk)
             assert chunks == ["Recovered"]
+
+
+@pytest.mark.asyncio
+async def test_llm_draft_slides_batch(llm):
+    with patch.object(llm, "_call", new_callable=AsyncMock) as mock_call:
+        mock_call.return_value = {"slides": [{"title": "S1"}, {"title": "S2"}]}
+        result = await llm.draft_slides_batch("Topic", "Audience", [{"title": "S1"}, {"title": "S2"}])
+        assert len(result["slides"]) == 2
+        assert result["slides"][0]["title"] == "S1"
+        assert mock_call.call_count == 1
+        # Check that it uses a higher max_tokens
+        mock_call.assert_called_once()
+        args, kwargs = mock_call.call_args
+        assert kwargs.get("max_tokens") == 4096
