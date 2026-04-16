@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from slideia.api.chat_routes import chat_router
 from slideia.api.routes import router as api_router
 from slideia.core.config import settings
 from slideia.core.logging import setup_logging
@@ -20,15 +21,19 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="slideia API", version="0.5.1", lifespan=lifespan)
+app = FastAPI(
+    title="slideia API",
+    version="0.6.0",
+    lifespan=lifespan,
+    docs_url=None if settings.ENVIRONMENT == "production" else "/docs",
+    redoc_url=None if settings.ENVIRONMENT == "production" else "/redoc",
+)
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.NEXT_FRONTEND_URL,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -44,3 +49,4 @@ app.mount(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")

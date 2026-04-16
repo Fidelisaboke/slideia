@@ -1,41 +1,41 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface SlideFormProps {
-    onSubmit: (data: {
-        topic: string;
-        audience: string;
-        tone: string;
-        slideCount: number;
-    }) => void;
-    isLoading: boolean;
+  onSubmit: (data: {
+    topic: string;
+    audience: string;
+    tone: string;
+    slideCount: number;
+  }) => void;
+  isLoading: boolean;
 }
 
 export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
-    const [topic, setTopic] = useState('');
-    const [audience, setAudience] = useState('');
-    const [tone, setTone] = useState('');
-    const [slideCount, setSlideCount] = useState(5);
+  const [topic, setTopic] = useState("");
+  const [audience, setAudience] = useState("");
+  const [tone, setTone] = useState("");
+  const [slideCount, setSlideCount] = useState(5);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (topic.trim() && audience.trim()) {
-            onSubmit({ topic, audience, tone, slideCount});
-        }
-    };
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (topic.trim() && audience.trim()) {
+      onSubmit({ topic, audience, tone, slideCount });
+    }
+  };
 
-return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+  return (
+    <div className="w-full max-w-2xl mx-auto p-6 glass-panel glow-border rounded-2xl">
+      <h2 className="text-2xl font-bold mb-6 font-(family-name:--font-sora) text-foreground">
         Create Your Presentation
       </h2>
-      
+
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label
             htmlFor="topic"
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-medium text-foreground mb-2"
           >
             Presentation Topic *
           </label>
@@ -45,7 +45,10 @@ return (
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g., Climate Change Solutions"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className="w-full px-4 py-2.5 bg-background-subtle border border-border rounded-lg
+                       text-foreground placeholder:text-muted-foreground/60
+                       focus:ring-2 focus:ring-primary/40 focus:border-primary/50
+                       outline-none transition-all duration-200"
             disabled={isLoading}
             required
           />
@@ -54,7 +57,7 @@ return (
         <div>
           <label
             htmlFor="audience"
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-medium text-foreground mb-2"
           >
             Target Audience *
           </label>
@@ -64,7 +67,10 @@ return (
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
             placeholder="e.g., Business executives, Students, General public"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className="w-full px-4 py-2.5 bg-background-subtle border border-border rounded-lg
+                       text-foreground placeholder:text-muted-foreground/60
+                       focus:ring-2 focus:ring-primary/40 focus:border-primary/50
+                       outline-none transition-all duration-200"
             disabled={isLoading}
             required
           />
@@ -73,7 +79,7 @@ return (
         <div>
           <label
             htmlFor="tone"
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-medium text-foreground mb-2"
           >
             Presentation Tone
           </label>
@@ -81,7 +87,10 @@ return (
             id="tone"
             value={tone}
             onChange={(e) => setTone(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
+            className="w-full px-4 py-2.5 bg-background-subtle border border-border rounded-lg
+                       text-foreground
+                       focus:ring-2 focus:ring-primary/40 focus:border-primary/50
+                       outline-none transition-all duration-200"
             disabled={isLoading}
           >
             <option value="professional">Professional</option>
@@ -96,9 +105,10 @@ return (
         <div>
           <label
             htmlFor="slideCount"
-            className="block text-sm font-medium text-gray-700 mb-2"
+            className="block text-sm font-medium text-foreground mb-2"
           >
-            Number of Slides: {slideCount}
+            Number of Slides:{" "}
+            <span className="text-primary font-semibold">{slideCount}</span>
           </label>
           <input
             id="slideCount"
@@ -107,19 +117,23 @@ return (
             max="20"
             value={slideCount}
             onChange={(e) => setSlideCount(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            className="w-full h-2 bg-background-subtle rounded-lg appearance-none cursor-pointer accent-primary"
             disabled={isLoading}
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>3</span>
             <span>20</span>
           </div>
         </div>
 
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={isLoading || !topic.trim() || !audience.trim()}
-          className="w-full enabled:bg-gradient-to-r enabled:from-blue-600 enabled:to-purple-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-md transition duration-200 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full gradient-button hover:shadow-lg hover:shadow-primary/20
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     text-white font-semibold py-3 px-6 rounded-lg
+                     transition-all duration-200
+                     hover:-translate-y-0.5 active:translate-y-0"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">
@@ -146,7 +160,7 @@ return (
               Processing...
             </span>
           ) : (
-            'Generate Outline'
+            "Generate Outline"
           )}
         </button>
       </form>
