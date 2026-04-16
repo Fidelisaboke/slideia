@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     )
 
     ENVIRONMENT: str = "production"
-    NEXT_FRONTEND_URL: str = "http://localhost:3000"
+    NEXT_FRONTEND_URL: str
     OPENROUTER_API_KEY: str
     OPENROUTER_MODEL: str = "xiaomi/mimo-v2-flash:free"
     REDIS_URL: str = "redis://localhost:6379"
