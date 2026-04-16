@@ -5,5 +5,19 @@ description = "Python workspace for Slideia"
 authors = [{ name = "Fidelisaboke" }]
 requires-python = ">=3.11"
 
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+]
+
 [tool.uv.workspace]
 members = ["apps/backend"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

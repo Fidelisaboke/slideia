@@ -45,9 +45,7 @@ def fake_deck():
 
 def test_propose_outline_success(client, outline_request, fake_deck):
     """Test successful outline proposal returns outline only."""
-    with patch(
-        "slideia.api.routes.generate_full_deck", return_value=fake_deck
-    ) as mock_gen:
+    with patch("slideia.api.routes.generate_full_deck", return_value=fake_deck) as mock_gen:
         response = client.post("/propose-outline", json=outline_request)
         assert response.status_code == 200
         data = response.json()
@@ -66,9 +64,7 @@ def test_propose_outline_invalid_request(client):
 
 def test_propose_outline_llm_error(client, outline_request):
     """Test LLM/service error returns 500."""
-    with patch(
-        "slideia.api.routes.generate_full_deck", side_effect=Exception("LLM fail")
-    ):
+    with patch("slideia.api.routes.generate_full_deck", side_effect=Exception("LLM fail")):
         response = client.post("/propose-outline", json=outline_request)
         assert response.status_code == 500
         assert response.json()["detail"].startswith("Oops! Something went wrong")

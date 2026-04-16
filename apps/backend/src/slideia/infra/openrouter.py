@@ -46,6 +46,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                             f"Rate limit hit (429). Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
                         )
                         import asyncio
+
                         await asyncio.sleep(delay)
                         continue
                 raise
@@ -75,9 +76,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             choices = resp_json.get("choices")
             if not choices or not choices[0].get("message"):
                 logger.error(f"Invalid OpenRouter response structure: {resp_json}")
-                raise ValueError(
-                    "OpenRouter returned an empty or invalid response structure."
-                )
+                raise ValueError("OpenRouter returned an empty or invalid response structure.")
 
             message = choices[0]["message"]
             content = message.get("content")
@@ -89,9 +88,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                     logger.error(f"Model refusal: {refusal}")
                     raise ValueError(f"Model refused request: {refusal}")
 
-                logger.error(
-                    f"OpenRouter returned null content. Full response: {resp_json}"
-                )
+                logger.error(f"OpenRouter returned null content. Full response: {resp_json}")
                 raise ValueError(
                     "OpenRouter returned null content. The model may have refused the request or encountered an error."
                 )
@@ -103,9 +100,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
 
             return json.loads(extracted)
 
-    async def propose_outline(
-        self, topic: str, audience: str, tone: str, slide_count: int
-    ) -> dict:
+    async def propose_outline(self, topic: str, audience: str, tone: str, slide_count: int) -> dict:
         prompt = OUTLINE_PROMPT.format(
             topic=topic,
             audience=audience,
@@ -121,9 +116,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         )
         return await self._call(prompt)
 
-    async def regenerate_slide(
-        self, title: str, summary: str, instruction: str | None = None
-    ) -> dict:
+    async def regenerate_slide(self, title: str, summary: str, instruction: str | None = None) -> dict:
         """Re-draft a slide's content, optionally guided by user instruction."""
         if instruction:
             instruction_block = f"USER INSTRUCTION:\n{instruction}\n\nPlease incorporate the above instruction when generating the new content."
@@ -150,7 +143,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             try:
                 async for chunk in self._execute_stream_call(messages, max_tokens):
                     yield chunk
-                return # Successfully finished streaming
+                return  # Successfully finished streaming
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
                     if attempt < max_retries - 1:
@@ -159,10 +152,11 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                             f"Rate limit hit (429) during stream initiation. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
                         )
                         import asyncio
+
                         await asyncio.sleep(delay)
                         continue
                 raise
-        
+
     async def _execute_stream_call(
         self,
         messages: list[dict[str, str]],
@@ -199,7 +193,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                     # Strip the "data: " prefix
                     if not line.startswith("data: "):
                         continue
-                    data_str = line[len("data: "):]
+                    data_str = line[len("data: ") :]
 
                     # OpenAI-compatible stream terminator
                     if data_str == "[DONE]":

@@ -36,7 +36,7 @@ export interface FileAttachmentMeta {
 /** A single chat message. */
 export interface ChatMessage {
   readonly id: ChatId;
-  readonly role: 'user' | 'assistant';
+  readonly role: "user" | "assistant";
   content: string;
   /** File metadata for user messages. */
   readonly attachments?: readonly FileAttachmentMeta[];

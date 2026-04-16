@@ -102,4 +102,3 @@ CRITICAL RULES:
 - Return ONLY valid JSON
 - Generate FRESH content that is different from the previous version
 """
-

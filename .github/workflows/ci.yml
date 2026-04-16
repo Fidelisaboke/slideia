@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   build_test_lint:
@@ -44,7 +44,7 @@ jobs:
         run: uv pip install -e apps/backend
 
       - name: Run checks with Turbo
-        run: pnpm turbo run test lint build
+        run: pnpm turbo run test lint format build
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

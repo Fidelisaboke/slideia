@@ -9,20 +9,18 @@ import {
   RegenerateSlideResponse,
   FullDeckExportRequest,
   GenerationProgressEvent,
-} from '@/types/api';
+} from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
-async function request<T>(
-  endpoint: string,
-  options: RequestInit
-): Promise<T> {
+async function request<T>(endpoint: string, options: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
   });
@@ -30,7 +28,7 @@ async function request<T>(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `API request failed: ${response.statusText}`
+      errorData.message || `API request failed: ${response.statusText}`,
     );
   }
 
@@ -44,14 +42,14 @@ async function streamEvents(
   endpoint: string,
   data: unknown,
   onProgress: (event: GenerationProgressEvent) => void,
-  abortController?: AbortController
+  abortController?: AbortController,
 ): Promise<void> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
     signal: abortController?.signal,
@@ -60,39 +58,39 @@ async function streamEvents(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Streaming request failed: ${response.statusText}`
+      errorData.message || `Streaming request failed: ${response.statusText}`,
     );
   }
 
   if (!response.body) {
-    throw new Error('Response body is null');
+    throw new Error("Response body is null");
   }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = "";
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    
+    const lines = buffer.split("\n");
+
     // Keep the last partial line in the buffer
-    buffer = lines.pop() || '';
+    buffer = lines.pop() || "";
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith('data: ')) continue;
-      
+      if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
       const jsonStr = trimmed.slice(6);
       let event: GenerationProgressEvent;
-      
+
       try {
         event = JSON.parse(jsonStr);
       } catch (err) {
-        console.warn('Failed to parse SSE event JSON:', err, trimmed);
+        console.warn("Failed to parse SSE event JSON:", err, trimmed);
         continue;
       }
 
@@ -103,9 +101,11 @@ async function streamEvents(
 }
 
 export const apiClient = {
-  async proposeOutline(data: ProposeOutlineRequest): Promise<ProposeOutlineResponse> {
-    return request<ProposeOutlineResponse>('/propose-outline', {
-      method: 'POST',
+  async proposeOutline(
+    data: ProposeOutlineRequest,
+  ): Promise<ProposeOutlineResponse> {
+    return request<ProposeOutlineResponse>("/propose-outline", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
@@ -113,14 +113,19 @@ export const apiClient = {
   async proposeOutlineStream(
     data: ProposeOutlineRequest,
     onProgress: (event: GenerationProgressEvent) => void,
-    abortController?: AbortController
+    abortController?: AbortController,
   ): Promise<void> {
-    return streamEvents('/propose-outline/stream', data, onProgress, abortController);
+    return streamEvents(
+      "/propose-outline/stream",
+      data,
+      onProgress,
+      abortController,
+    );
   },
 
   async generateDeck(data: GenerateDeckRequest): Promise<GenerateDeckResponse> {
-    return request<GenerateDeckResponse>('/generate-deck', {
-      method: 'POST',
+    return request<GenerateDeckResponse>("/generate-deck", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
@@ -128,28 +133,37 @@ export const apiClient = {
   async generateDeckStream(
     data: GenerateDeckRequest,
     onProgress: (event: GenerationProgressEvent) => void,
-    abortController?: AbortController
+    abortController?: AbortController,
   ): Promise<void> {
-    return streamEvents('/generate-deck/stream', data, onProgress, abortController);
+    return streamEvents(
+      "/generate-deck/stream",
+      data,
+      onProgress,
+      abortController,
+    );
   },
 
-  async regenerateSlide(data: RegenerateSlideRequest): Promise<RegenerateSlideResponse> {
-    return request<RegenerateSlideResponse>('/regenerate-slide', {
-      method: 'POST',
+  async regenerateSlide(
+    data: RegenerateSlideRequest,
+  ): Promise<RegenerateSlideResponse> {
+    return request<RegenerateSlideResponse>("/regenerate-slide", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  async exportPptx(data: ExportPptxRequest | FullDeckExportRequest): Promise<ExportPptxResponse> {
-    return request<ExportPptxResponse>('/export-pptx', {
-      method: 'POST',
+  async exportPptx(
+    data: ExportPptxRequest | FullDeckExportRequest,
+  ): Promise<ExportPptxResponse> {
+    return request<ExportPptxResponse>("/export-pptx", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
 
   async exportPdf(data: FullDeckExportRequest): Promise<ExportPptxResponse> {
-    return request<ExportPptxResponse>('/export-pdf', {
-      method: 'POST',
+    return request<ExportPptxResponse>("/export-pdf", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },

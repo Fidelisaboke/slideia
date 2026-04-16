@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Hero from '@/components/landing/Hero';
-import Features from '@/components/landing/Features';
-import HowItWorks from '@/components/landing/HowItWorks';
+import Hero from "@/components/landing/Hero";
+import Features from "@/components/landing/Features";
+import HowItWorks from "@/components/landing/HowItWorks";
 
 interface LandingPageProps {
   onSubmit: (data: {

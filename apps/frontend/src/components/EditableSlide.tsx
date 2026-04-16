@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   RefreshCw,
   Plus,
@@ -11,7 +11,7 @@ import {
   MessageSquare,
   StickyNote,
   Image as ImageIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ export default function EditableSlide({
   onRegenerate,
 }: EditableSlideProps) {
   const [showInstruction, setShowInstruction] = useState(false);
-  const [instruction, setInstruction] = useState('');
+  const [instruction, setInstruction] = useState("");
   const [expanded, setExpanded] = useState(true);
 
   // ── Handlers ─────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export default function EditableSlide({
     (value: string) => {
       onUpdate(index, { title: value });
     },
-    [index, onUpdate]
+    [index, onUpdate],
   );
 
   const handleBulletChange = useCallback(
@@ -59,11 +59,11 @@ export default function EditableSlide({
       updated[bulletIdx] = value;
       onUpdate(index, { bullets: updated });
     },
-    [index, data.bullets, onUpdate]
+    [index, data.bullets, onUpdate],
   );
 
   const handleAddBullet = useCallback(() => {
-    onUpdate(index, { bullets: [...data.bullets, ''] });
+    onUpdate(index, { bullets: [...data.bullets, ""] });
   }, [index, data.bullets, onUpdate]);
 
   const handleRemoveBullet = useCallback(
@@ -71,20 +71,20 @@ export default function EditableSlide({
       const updated = data.bullets.filter((_, i) => i !== bulletIdx);
       onUpdate(index, { bullets: updated });
     },
-    [index, data.bullets, onUpdate]
+    [index, data.bullets, onUpdate],
   );
 
   const handleNotesChange = useCallback(
     (value: string) => {
       onUpdate(index, { notes: value });
     },
-    [index, onUpdate]
+    [index, onUpdate],
   );
 
   const handleRegenerate = useCallback(() => {
     const trimmed = instruction.trim();
     onRegenerate(index, trimmed || undefined);
-    setInstruction('');
+    setInstruction("");
     setShowInstruction(false);
   }, [index, instruction, onRegenerate]);
 
@@ -97,14 +97,16 @@ export default function EditableSlide({
       className={`
         glass-panel glow-border rounded-2xl overflow-hidden
         transition-all duration-300
-        ${isRegenerating ? 'opacity-60 pointer-events-none' : ''}
+        ${isRegenerating ? "opacity-60 pointer-events-none" : ""}
       `}
     >
       {/* ── Slide Header ──────────────────────────────────────────── */}
       <div className="flex items-start gap-3 p-4 pb-0">
         {/* Slide number badge */}
-        <div className="shrink-0 w-10 h-10 rounded-xl gradient-button
-                        flex items-center justify-center font-bold text-white text-sm shadow-md">
+        <div
+          className="shrink-0 w-10 h-10 rounded-xl gradient-button
+                        flex items-center justify-center font-bold text-white text-sm shadow-md"
+        >
           {index + 1}
         </div>
 
@@ -131,9 +133,13 @@ export default function EditableSlide({
           onClick={() => setExpanded(!expanded)}
           className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-foreground
                      hover:bg-primary/10 transition-colors"
-          aria-label={expanded ? 'Collapse slide' : 'Expand slide'}
+          aria-label={expanded ? "Collapse slide" : "Expand slide"}
         >
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {expanded ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
         </button>
       </div>
 
@@ -142,7 +148,7 @@ export default function EditableSlide({
         {expanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
@@ -155,12 +161,17 @@ export default function EditableSlide({
                 </h4>
                 <div className="space-y-2">
                   {data.bullets.map((bullet, bulletIdx) => (
-                    <div key={bulletIdx} className="flex items-center gap-2 group">
+                    <div
+                      key={bulletIdx}
+                      className="flex items-center gap-2 group"
+                    >
                       <span className="text-primary text-sm shrink-0">▪</span>
                       <input
                         type="text"
                         value={bullet}
-                        onChange={(e) => handleBulletChange(bulletIdx, e.target.value)}
+                        onChange={(e) =>
+                          handleBulletChange(bulletIdx, e.target.value)
+                        }
                         className="flex-1 text-sm text-foreground bg-transparent
                                    border-b border-transparent hover:border-border
                                    focus:border-primary focus:outline-none
@@ -230,7 +241,7 @@ export default function EditableSlide({
                                hover:bg-primary/10"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    {showInstruction ? 'Hide instructions' : 'Add instructions'}
+                    {showInstruction ? "Hide instructions" : "Add instructions"}
                   </button>
                   <button
                     onClick={handleRegenerate}
@@ -241,8 +252,10 @@ export default function EditableSlide({
                                disabled:opacity-50 disabled:cursor-not-allowed
                                transition-all duration-200"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                    {isRegenerating ? 'Regenerating…' : 'Regenerate'}
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin" : ""}`}
+                    />
+                    {isRegenerating ? "Regenerating…" : "Regenerate"}
                   </button>
                 </div>
 
@@ -251,7 +264,7 @@ export default function EditableSlide({
                   {showInstruction && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
@@ -261,7 +274,7 @@ export default function EditableSlide({
                         value={instruction}
                         onChange={(e) => setInstruction(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRegenerate();
+                          if (e.key === "Enter") handleRegenerate();
                         }}
                         placeholder="e.g., Make this more technical, add statistics..."
                         className="mt-2 w-full text-xs text-foreground bg-background-subtle/50

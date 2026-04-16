@@ -33,9 +33,7 @@ class ImageFetcher:
 
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(
-                    self.base_url, headers=self.headers, params=params
-                )
+                response = await client.get(self.base_url, headers=self.headers, params=params)
 
                 if response.status_code == 200:
                     data = response.json()

@@ -43,9 +43,7 @@ export default function RootLayout({
           <div className="ambient-orb ambient-orb-mint" aria-hidden="true" />
 
           {/* Page content */}
-          <div className="relative z-10">
-            {children}
-          </div>
+          <div className="relative z-10">{children}</div>
         </ThemeProvider>
       </body>
     </html>

@@ -5,9 +5,7 @@ from slideia.core.paths import DOWNLOADS_DIR, ENV_FILE
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=ENV_FILE, env_file_encoding="utf-8", case_sensitive=True
-    )
+    model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", case_sensitive=True)
 
     ENVIRONMENT: str = "production"
     NEXT_FRONTEND_URL: str

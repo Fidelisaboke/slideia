@@ -8,7 +8,7 @@
  *   </motion.div>
  */
 
-import type { Variants } from 'motion/react';
+import type { Variants } from "motion/react";
 
 // ── Fade-in from below ───────────────────────────────────────────────
 

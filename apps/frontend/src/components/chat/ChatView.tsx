@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
-import Link from 'next/link';
-import { useChat } from '@/hooks/useChat';
-import ChatMessage from '@/components/chat/ChatMessage';
-import ChatInput from '@/components/chat/ChatInput';
-import ThemeToggle from '@/components/ThemeToggle';
-import { FileAttachment } from '@/types/chat';
-import { Sparkles, ArrowDown } from 'lucide-react';
-import { fadeInUp, staggerFast, scaleIn } from '@/lib/motion';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { useChat } from "@/hooks/useChat";
+import ChatMessage from "@/components/chat/ChatMessage";
+import ChatInput from "@/components/chat/ChatInput";
+import ThemeToggle from "@/components/ThemeToggle";
+import { FileAttachment } from "@/types/chat";
+import { Sparkles, ArrowDown } from "lucide-react";
+import { fadeInUp, staggerFast, scaleIn } from "@/lib/motion";
 
 // ── Suggested prompts for the empty state ────────────────────────────
 
 const SUGGESTIONS = [
-  'Create a 5-slide deck on AI in Healthcare for medical professionals',
-  'Make a presentation about climate change solutions for students',
-  'Design a startup pitch deck for a fintech product',
-  'Create a training presentation on cybersecurity best practices',
+  "Create a 5-slide deck on AI in Healthcare for medical professionals",
+  "Make a presentation about climate change solutions for students",
+  "Design a startup pitch deck for a fintech product",
+  "Create a training presentation on cybersecurity best practices",
 ];
 
 // ── Component ────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ export default function ChatView() {
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   // ── Auto-scroll to bottom on new messages ────────────────────────
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
@@ -62,8 +62,8 @@ export default function ChatView() {
       setShowScrollButton(distanceFromBottom > 200);
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   // ── Send handler ─────────────────────────────────────────────────
@@ -71,14 +71,14 @@ export default function ChatView() {
     (prompt: string, files?: FileAttachment[]) => {
       sendMessage(prompt, files);
     },
-    [sendMessage]
+    [sendMessage],
   );
 
   const handleSuggestion = useCallback(
     (suggestion: string) => {
       sendMessage(suggestion);
     },
-    [sendMessage]
+    [sendMessage],
   );
 
   const hasMessages = messages.length > 0;
@@ -89,15 +89,21 @@ export default function ChatView() {
       <header className="flex items-center justify-between px-4 py-3 border-b border-border glass-panel rounded-b-xl">
         <Link href="/" className="flex items-center gap-2.5 group">
           {/* Creative Logo */}
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
-                          group-hover:-translate-y-0.5 transition-transform duration-300">
-            <span className="text-white font-bold text-sm font-(family-name:--font-sora)">S</span>
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
+                          group-hover:-translate-y-0.5 transition-transform duration-300"
+          >
+            <span className="text-white font-bold text-sm font-(family-name:--font-sora)">
+              S
+            </span>
           </div>
           <div>
             <h1 className="text-sm font-bold font-(family-name:--font-sora) tracking-tight">
               <span className="gradient-text">Slide</span>
               <span className="text-foreground font-semibold">ia</span>
-              <span className="text-muted-foreground text-[10px] font-normal ml-1.5">Chat</span>
+              <span className="text-muted-foreground text-[10px] font-normal ml-1.5">
+                Chat
+              </span>
             </h1>
             <p className="text-[10px] text-muted-foreground">
               AI-powered presentation creator
@@ -139,8 +145,10 @@ export default function ChatView() {
             animate="show"
             variants={fadeInUp}
           >
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl
-                            bg-primary/10 mb-6 glow-border">
+            <div
+              className="flex items-center justify-center w-16 h-16 rounded-2xl
+                            bg-primary/10 mb-6 glow-border"
+            >
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-2">
@@ -201,8 +209,7 @@ export default function ChatView() {
             onClick={dismissError}
             className="text-destructive/60 hover:text-destructive ml-2"
           >
-            <span className="sr-only">Dismiss</span>
-            ✕
+            <span className="sr-only">Dismiss</span>✕
           </button>
         </div>
       )}

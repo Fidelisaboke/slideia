@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { motion } from 'motion/react';
-import { Download, RotateCcw, CheckCircle2, FileText } from 'lucide-react';
-import { GenerateDeckResponse, SlideExportItem } from '@/types/api';
-import { apiClient } from '@/lib/apiClient';
-import EditableSlide from '@/components/EditableSlide';
-import { fadeInUp, staggerContainer } from '@/lib/motion';
+import { useState, useCallback } from "react";
+import { motion } from "motion/react";
+import { Download, RotateCcw, CheckCircle2, FileText } from "lucide-react";
+import { GenerateDeckResponse, SlideExportItem } from "@/types/api";
+import { apiClient } from "@/lib/apiClient";
+import EditableSlide from "@/components/EditableSlide";
+import { fadeInUp, staggerContainer } from "@/lib/motion";
 
 // Exported instance from apiClient.ts
 
@@ -38,10 +38,10 @@ interface DeckViewProps {
 function buildEditableSlides(deck: GenerateDeckResponse): EditableSlideData[] {
   return deck.slides.map((slide, i) => ({
     title: deck.outline.slides[i]?.title ?? `Slide ${i + 1}`,
-    summary: deck.outline.slides[i]?.summary ?? '',
+    summary: deck.outline.slides[i]?.summary ?? "",
     bullets: [...slide.bullets],
-    notes: slide.notes ?? '',
-    image_prompt: slide.image_prompt ?? '',
+    notes: slide.notes ?? "",
+    image_prompt: slide.image_prompt ?? "",
     theme: slide.theme,
   }));
 }
@@ -55,10 +55,12 @@ export default function DeckView({
   onReset,
 }: DeckViewProps) {
   const [slides, setSlides] = useState<EditableSlideData[]>(() =>
-    buildEditableSlides(deck)
+    buildEditableSlides(deck),
   );
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null);
-  const [exportingType, setExportingType] = useState<'pptx' | 'pdf' | null>(null);
+  const [exportingType, setExportingType] = useState<"pptx" | "pdf" | null>(
+    null,
+  );
   const [exportError, setExportError] = useState<string | null>(null);
 
   // ── Update a single slide's fields ───────────────────────────────
@@ -66,10 +68,10 @@ export default function DeckView({
   const handleUpdateSlide = useCallback(
     (index: number, updated: Partial<EditableSlideData>) => {
       setSlides((prev) =>
-        prev.map((s, i) => (i === index ? { ...s, ...updated } : s))
+        prev.map((s, i) => (i === index ? { ...s, ...updated } : s)),
       );
     },
-    []
+    [],
   );
 
   // ── Regenerate a single slide via the API ────────────────────────
@@ -91,56 +93,68 @@ export default function DeckView({
           prev.map((s, i) =>
             i === index
               ? {
-                ...s,
-                bullets: result.bullets,
-                notes: result.notes ?? s.notes,
-                image_prompt: result.image_prompt ?? s.image_prompt,
-              }
-              : s
-          )
+                  ...s,
+                  bullets: result.bullets,
+                  notes: result.notes ?? s.notes,
+                  image_prompt: result.image_prompt ?? s.image_prompt,
+                }
+              : s,
+          ),
         );
       } catch (err) {
-        console.error('Failed to regenerate slide:', err);
+        console.error("Failed to regenerate slide:", err);
         // Optionally surface error — for now just log
       } finally {
         setRegeneratingIdx(null);
       }
     },
-    [slides]
+    [slides],
   );
 
   // ── Export the modified deck ──────────────────────────────────────
 
-  const handleExport = useCallback(async (type: 'pptx' | 'pdf') => {
-    setExportingType(type);
-    setExportError(null);
+  const handleExport = useCallback(
+    async (type: "pptx" | "pdf") => {
+      setExportingType(type);
+      setExportError(null);
 
-    try {
-      const exportSlides: SlideExportItem[] = slides.map((s) => ({
-        title: s.title,
-        summary: s.summary,
-        bullets: s.bullets,
-        notes: s.notes,
-        image_prompt: s.image_prompt,
-        theme: s.theme,
-      }));
+      try {
+        const exportSlides: SlideExportItem[] = slides.map((s) => ({
+          title: s.title,
+          summary: s.summary,
+          bullets: s.bullets,
+          notes: s.notes,
+          image_prompt: s.image_prompt,
+          theme: s.theme,
+        }));
 
-      const response = type === 'pptx'
-        ? await apiClient.exportPptx({ topic, audience, slides: exportSlides })
-        : await apiClient.exportPdf({ topic, audience, slides: exportSlides });
+        const response =
+          type === "pptx"
+            ? await apiClient.exportPptx({
+                topic,
+                audience,
+                slides: exportSlides,
+              })
+            : await apiClient.exportPdf({
+                topic,
+                audience,
+                slides: exportSlides,
+              });
 
-      const downloadUrl = apiClient.getDownloadUrl(response.download_url);
-      window.open(downloadUrl, '_blank');
-    } catch (err) {
-      setExportError(
-        err instanceof Error
-          ? err.message
-          : `Failed to export ${type.toUpperCase()}. Please try again.`
-      );
-    } finally {
-      setExportingType(null);
-    }
-  }, [slides, topic, audience]);
+        const downloadUrl = apiClient.getDownloadUrl(response.download_url);
+        window.open(downloadUrl, "_blank");
+      } catch (err) {
+        setExportError(
+          err instanceof Error
+            ? err.message
+            : `Failed to export ${type.toUpperCase()}. Please try again.`,
+        );
+      } finally {
+        setExportingType(null);
+      }
+    },
+    [slides, topic, audience],
+  );
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -151,8 +165,10 @@ export default function DeckView({
         initial="hidden"
         animate="show"
       >
-        <div className="inline-flex items-center justify-center w-14 h-14
-                        rounded-2xl bg-secondary/10 mb-4">
+        <div
+          className="inline-flex items-center justify-center w-14 h-14
+                        rounded-2xl bg-secondary/10 mb-4"
+        >
           <CheckCircle2 className="w-7 h-7 text-secondary" />
         </div>
         <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-1">
@@ -165,8 +181,10 @@ export default function DeckView({
 
       {/* ── Export Error ───────────────────────────────────────────── */}
       {exportError && (
-        <div className="mb-6 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-xl
-                        flex items-center justify-between">
+        <div
+          className="mb-6 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-xl
+                        flex items-center justify-between"
+        >
           <p className="text-xs text-destructive">{exportError}</p>
           <button
             onClick={() => setExportError(null)}
@@ -204,7 +222,7 @@ export default function DeckView({
         transition={{ duration: 0.4, delay: 0.3 }}
       >
         <button
-          onClick={() => handleExport('pptx')}
+          onClick={() => handleExport("pptx")}
           disabled={!!exportingType}
           className="w-full gradient-button text-white font-semibold py-3 px-6 rounded-xl
                      shadow-md shadow-primary/20
@@ -212,7 +230,7 @@ export default function DeckView({
                      disabled:opacity-50 disabled:cursor-not-allowed
                      transition-all duration-200 flex items-center justify-center gap-2"
         >
-          {exportingType === 'pptx' ? (
+          {exportingType === "pptx" ? (
             <>
               <svg
                 className="animate-spin h-5 w-5"
@@ -245,7 +263,7 @@ export default function DeckView({
         </button>
 
         <button
-          onClick={() => handleExport('pdf')}
+          onClick={() => handleExport("pdf")}
           disabled={!!exportingType}
           className="w-full text-secondary font-semibold py-3 px-6 rounded-xl
                      border border-secondary/30 bg-secondary/5
@@ -255,7 +273,7 @@ export default function DeckView({
                      disabled:opacity-50 disabled:cursor-not-allowed
                      transition-all duration-200 flex items-center justify-center gap-2"
         >
-          {exportingType === 'pdf' ? (
+          {exportingType === "pdf" ? (
             <>
               <svg
                 className="animate-spin h-5 w-5"
@@ -294,7 +312,6 @@ export default function DeckView({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-
         <button
           onClick={onReset}
           className="w-full text-muted-foreground hover:text-primary font-medium
@@ -307,7 +324,8 @@ export default function DeckView({
         </button>
 
         <p className="text-center text-[10px] text-muted-foreground/50 mt-2">
-          💡 Edit titles and bullet points inline · Click &quot;Regenerate&quot; to re-roll a slide · Add instructions for targeted improvements
+          💡 Edit titles and bullet points inline · Click &quot;Regenerate&quot;
+          to re-roll a slide · Add instructions for targeted improvements
         </p>
       </motion.div>
     </div>

@@ -1,36 +1,36 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface SlideFormProps {
-    onSubmit: (data: {
-        topic: string;
-        audience: string;
-        tone: string;
-        slideCount: number;
-    }) => void;
-    isLoading: boolean;
+  onSubmit: (data: {
+    topic: string;
+    audience: string;
+    tone: string;
+    slideCount: number;
+  }) => void;
+  isLoading: boolean;
 }
 
 export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
-    const [topic, setTopic] = useState('');
-    const [audience, setAudience] = useState('');
-    const [tone, setTone] = useState('');
-    const [slideCount, setSlideCount] = useState(5);
+  const [topic, setTopic] = useState("");
+  const [audience, setAudience] = useState("");
+  const [tone, setTone] = useState("");
+  const [slideCount, setSlideCount] = useState(5);
 
-    const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (topic.trim() && audience.trim()) {
-            onSubmit({ topic, audience, tone, slideCount});
-        }
-    };
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (topic.trim() && audience.trim()) {
+      onSubmit({ topic, audience, tone, slideCount });
+    }
+  };
 
-return (
+  return (
     <div className="w-full max-w-2xl mx-auto p-6 glass-panel glow-border rounded-2xl">
       <h2 className="text-2xl font-bold mb-6 font-(family-name:--font-sora) text-foreground">
         Create Your Presentation
       </h2>
-      
+
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label
@@ -107,7 +107,8 @@ return (
             htmlFor="slideCount"
             className="block text-sm font-medium text-foreground mb-2"
           >
-            Number of Slides: <span className="text-primary font-semibold">{slideCount}</span>
+            Number of Slides:{" "}
+            <span className="text-primary font-semibold">{slideCount}</span>
           </label>
           <input
             id="slideCount"
@@ -159,7 +160,7 @@ return (
               Processing...
             </span>
           ) : (
-            'Generate Outline'
+            "Generate Outline"
           )}
         </button>
       </form>

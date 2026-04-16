@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X } from "lucide-react";
 
 interface ErrorAlertProps {
   message: string;
