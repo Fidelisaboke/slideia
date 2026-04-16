@@ -31,6 +31,28 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         self.model = model
 
     async def _call(self, prompt: str, max_tokens: int = 2048) -> dict:
+        """Call OpenRouter with exponential backoff for rate limits."""
+        max_retries = 3
+        base_delay = 2.0
+
+        for attempt in range(max_retries):
+            try:
+                return await self._execute_call(prompt, max_tokens)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt)
+                        logger.warning(
+                            f"Rate limit hit (429). Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        import asyncio
+                        await asyncio.sleep(delay)
+                        continue
+                raise
+        # This point should not be reached due to 'raise' above
+        raise RuntimeError("Max retries exceeded")
+
+    async def _execute_call(self, prompt: str, max_tokens: int = 2048) -> dict:
         logger.info("Calling OpenRouter LLM...")
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
@@ -120,23 +142,32 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         messages: list[dict[str, str]],
         max_tokens: int = 2048,
     ) -> AsyncGenerator[str, None]:
-        """Stream content deltas from OpenRouter.
+        """Stream content deltas from OpenRouter with retry logic for rate limits."""
+        max_retries = 3
+        base_delay = 2.0
 
-        Yields individual text chunks as they arrive.  The caller is
-        responsible for assembling them into a complete response.
-
-        Args:
-            messages: OpenAI-compatible message list
-                      (e.g. [{"role": "user", "content": "..."}]).
-            max_tokens: Upper bound on generated tokens.
-
-        Yields:
-            str: A content delta (possibly a single token or a few tokens).
-
-        Raises:
-            httpx.HTTPStatusError: On non-2xx responses from OpenRouter.
-            ValueError: If the stream contains an unrecoverable error event.
-        """
+        for attempt in range(max_retries):
+            try:
+                async for chunk in self._execute_stream_call(messages, max_tokens):
+                    yield chunk
+                return # Successfully finished streaming
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt)
+                        logger.warning(
+                            f"Rate limit hit (429) during stream initiation. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        import asyncio
+                        await asyncio.sleep(delay)
+                        continue
+                raise
+        
+    async def _execute_stream_call(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int = 2048,
+    ) -> AsyncGenerator[str, None]:
         logger.info("Starting streaming call to OpenRouter...")
 
         request_body = {
