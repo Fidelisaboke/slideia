@@ -63,6 +63,7 @@ async def generate_outline(request: ProposeOutlineRequest) -> dict:
             request.slide_count,
             llm,
             cache,
+            theme_preset=request.theme_preset,
         )
 
         # Return only the outline to the user
@@ -89,6 +90,7 @@ async def propose_outline_stream_route(request_data: ProposeOutlineRequest, requ
                 request_data.slide_count,
                 llm,
                 cache,
+                theme_preset=request_data.theme_preset,
             )
             async for event in generator:
                 if await request.is_disconnected():
@@ -120,6 +122,7 @@ async def generate_deck(request: DeckRequest):
             request.slide_count,
             llm,
             cache,
+            theme_preset=request.theme_preset,
         )
 
         logger.info(f"Deck generated successfully with {len(deck.slides)} slides")
@@ -145,6 +148,7 @@ async def generate_deck_stream(request_data: DeckRequest, request: Request):
                 request_data.slide_count,
                 llm,
                 cache,
+                theme_preset=request_data.theme_preset,
             )
             async for event in generator:
                 # Check for disconnection
@@ -230,6 +234,8 @@ async def export_pptx(request: FullDeckExportRequest):
         deck_data = {
             "title": request.topic,
             "subtitle": f"For {request.audience}",
+            "palette": request.palette or [],
+            "font": request.font or "Calibri",
             "slides": [],
         }
 
@@ -316,6 +322,8 @@ async def export_pdf(request: FullDeckExportRequest):
         deck_data = {
             "title": request.topic,
             "subtitle": f"For {request.audience}",
+            "palette": request.palette or [],
+            "font": request.font or "Calibri",
             "slides": [],
         }
 

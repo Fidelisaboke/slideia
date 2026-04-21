@@ -17,11 +17,37 @@ from slideia.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Purple Mint Palette
-PRIMARY_COLOR = colors.HexColor("#7C3AED")  # Violet 600
-SECONDARY_COLOR = colors.HexColor("#10B981")  # Emerald 500
-TEXT_COLOR = colors.HexColor("#1F2937")  # Gray 800
-BG_COLOR = colors.HexColor("#FFFFFF")
+# Default palette — applied when no theme palette is provided or parsing fails.
+THEME_DEFAULTS = {
+    "primary": colors.HexColor("#7C3AED"),  # Violet 600 (Purple Mint)
+    "secondary": colors.HexColor("#10B981"),  # Emerald 500
+    "text": colors.HexColor("#1F2937"),  # Gray 800
+    "background": colors.HexColor("#FFFFFF"),
+}
+
+
+def _parse_palette(palette: list[str]) -> dict:
+    """
+    Attempt to parse a list of hex colour strings into a theme dict.
+    Falls back to THEME_DEFAULTS values for any entry that fails.
+    """
+
+    def _hex(value: str, default) -> object:
+        try:
+            return colors.HexColor(value.strip())
+        except Exception:
+            return default
+
+    return {
+        "primary": _hex(palette[0], THEME_DEFAULTS["primary"])
+        if len(palette) > 0
+        else THEME_DEFAULTS["primary"],
+        "secondary": _hex(palette[1], THEME_DEFAULTS["secondary"])
+        if len(palette) > 1
+        else THEME_DEFAULTS["secondary"],
+        "text": THEME_DEFAULTS["text"],  # Always dark text for legibility
+        "background": THEME_DEFAULTS["background"],
+    }
 
 
 async def export_deck_to_pdf(input_path: str, output_path: str):
@@ -35,32 +61,36 @@ async def export_deck_to_pdf(input_path: str, output_path: str):
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # Resolve theme colours: prefer explicit palette from data, fallback to defaults
+    raw_palette = data.get("palette") or []
+    theme = _parse_palette(raw_palette) if raw_palette else THEME_DEFAULTS.copy()
+
     # Setup canvas
     c = canvas.Canvas(output_path, pagesize=landscape(A4))
     width, height = landscape(A4)
 
     # 1. Title Slide
-    _draw_title_slide(c, data, width, height)
+    _draw_title_slide(c, data, width, height, theme)
     c.showPage()
 
     # 2. Content Slides
     for slide_index, s in enumerate(data.get("slides", [])):
         logger.info(f"Processing PDF slide {slide_index + 1}")
-        await _draw_content_slide(c, s, slide_index, width, height)
+        await _draw_content_slide(c, s, slide_index, width, height, theme)
         c.showPage()
 
     c.save()
     logger.info(f"Exported PDF to {output_path}")
 
 
-def _draw_title_slide(c, data, width, height):
+def _draw_title_slide(c, data, width, height, theme: dict):
     """Draws the title slide."""
-    # Background (optional accent)
-    c.setFillColor(colors.HexColor("#F9FAFB"))  # Light gray bg
+    # Background
+    c.setFillColor(theme["background"])
     c.rect(0, 0, width, height, fill=1, stroke=0)
 
     # Accent bar at top
-    c.setFillColor(PRIMARY_COLOR)
+    c.setFillColor(theme["primary"])
     c.rect(0, height - 10, width, 10, fill=1, stroke=0)
 
     title = data.get("title", "Untitled Presentation")
@@ -68,35 +98,38 @@ def _draw_title_slide(c, data, width, height):
 
     # Title
     c.setFont("Helvetica-Bold", 48)
-    c.setFillColor(PRIMARY_COLOR)
+    c.setFillColor(theme["primary"])
     c.drawCentredString(width / 2, height / 2 + 20, title)
 
     # Subtitle
     c.setFont("Helvetica", 24)
-    c.setFillColor(TEXT_COLOR)
+    c.setFillColor(theme["text"])
     c.drawCentredString(width / 2, height / 2 - 40, subtitle)
 
 
-async def _draw_content_slide(c, s, slide_index, width, height):
+async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
     """Draws a single content slide."""
     # Background
-    c.setFillColor(BG_COLOR)
+    c.setFillColor(theme["background"])
     c.rect(0, 0, width, height, fill=1, stroke=0)
 
     # Title
     title_text = s.get("title", f"Slide {slide_index + 1}")
     c.setFont("Helvetica-Bold", 32)
-    c.setFillColor(PRIMARY_COLOR)
+    c.setFillColor(theme["primary"])
     c.drawString(0.5 * inch, height - 0.8 * inch, title_text)
 
     # Divider line
-    c.setStrokeColor(SECONDARY_COLOR)
+    c.setStrokeColor(theme["secondary"])
     c.setLineWidth(2)
     c.line(0.5 * inch, height - 1.0 * inch, width - 0.5 * inch, height - 1.0 * inch)
 
     # Layout dimensions
     content_width = 6.5 * inch
     image_width = 3 * inch
+
+    # 16:9 aspect ratio for image slot
+    image_height = image_width / 1.78
 
     # Summary & Bullets using Platypus Paragraphs for wrapping
     styles = getSampleStyleSheet()
@@ -107,7 +140,7 @@ async def _draw_content_slide(c, s, slide_index, width, height):
         parent=styles["Normal"],
         fontName="Helvetica",
         fontSize=14,
-        textColor=TEXT_COLOR,
+        textColor=theme["text"],
         leading=18,
         spaceAfter=12,
     )
@@ -117,7 +150,7 @@ async def _draw_content_slide(c, s, slide_index, width, height):
         parent=styles["Normal"],
         fontName="Helvetica",
         fontSize=16,
-        textColor=TEXT_COLOR,
+        textColor=theme["text"],
         leading=22,
         leftIndent=20,
         bulletIndent=5,
@@ -137,22 +170,23 @@ async def _draw_content_slide(c, s, slide_index, width, height):
     # Draw Bullets
     bullets = s.get("bullets", [])
     for bullet_text in bullets:
-        # Ensure it's a clean bullet
         clean_text = bullet_text.strip()
         if not (clean_text.startswith("•") or clean_text.startswith("-")):
             clean_text = f"• {clean_text}"
 
         p = Paragraph(clean_text, bullet_style)
         w, h = p.wrap(content_width, height)
-        # Check if we run out of space (simplified)
         if current_y - h < 0.5 * inch:
             break
         p.drawOn(c, 0.5 * inch, current_y - h)
         current_y -= h + 8
 
-    # Image Handling
+    # Image Handling — placed in upper-right quadrant below the header
     image_url = s.get("image_url")
     image_prompt = s.get("image_prompt", "")
+
+    img_x = width - image_width - 0.5 * inch
+    img_y = height - 1.5 * inch - image_height
 
     if image_url:
         try:
@@ -161,38 +195,32 @@ async def _draw_content_slide(c, s, slide_index, width, height):
                 response = await client.get(image_url)
             if response.status_code == 200:
                 img_data = BytesIO(response.content)
-                # Position image on the right
-                img_x = width - image_width - 0.5 * inch
-                img_y = height - 1.5 * inch - image_width  # Keep it squareish or aspect ratio
-
-                # Draw image (checking size/aspect ratio would be better but let's start simple)
                 c.drawImage(
                     reportlab_image_from_stream(img_data),
                     img_x,
                     img_y,
                     width=image_width,
+                    height=image_height,
                     preserveAspectRatio=True,
                     mask="auto",
                 )
         except Exception as e:
             logger.warning(f"Failed to add image to PDF: {e}")
-            _draw_image_placeholder(c, image_prompt, width, height, image_width)
+            _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
     elif image_prompt:
-        _draw_image_placeholder(c, image_prompt, width, height, image_width)
+        _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
 
 
-def _draw_image_placeholder(c, prompt, width, height, img_w):
-    """Draws a placeholder for an image."""
-    img_x = width - img_w - 0.5 * inch
-    img_y = height - 1.5 * inch - img_w
-
-    c.setStrokeColor(SECONDARY_COLOR)
+def _draw_image_placeholder(c, prompt, img_x, img_y, img_w, img_h, theme: dict):
+    """Draws a dashed placeholder rectangle where an image would appear."""
+    c.setStrokeColor(theme["secondary"])
     c.setDash(3, 3)
-    c.rect(img_x, img_y, img_w, img_w, stroke=1, fill=0)
+    c.rect(img_x, img_y, img_w, img_h, stroke=1, fill=0)
 
     c.setFont("Helvetica-Oblique", 10)
-    c.setFillColor(SECONDARY_COLOR)
-    c.drawCentredString(img_x + img_w / 2, img_y + img_w / 2, f"[Image: {prompt[:30]}...]")
+    c.setFillColor(theme["secondary"])
+    label = f"[Image: {prompt[:30]}...]" if len(prompt) > 30 else f"[Image: {prompt}]"
+    c.drawCentredString(img_x + img_w / 2, img_y + img_h / 2, label)
     c.setDash()
 
 

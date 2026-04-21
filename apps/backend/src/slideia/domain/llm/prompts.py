@@ -4,6 +4,7 @@ PRESENTATION DETAILS:
 - Topic: {topic}
 - Audience: {audience}
 - Tone: {tone}
+- Theme Preference: {theme_instruction}
 
 INSTRUCTIONS:
 1. Create a compelling presentation title that captures the main theme
@@ -16,6 +17,9 @@ INSTRUCTIONS:
 OUTPUT FORMAT (valid JSON only):
 {{
   "title": "Presentation Title Here",
+  "theme_summary": "Description of the visual style and color palette based on {theme_instruction}",
+  "palette": ["#Hex1", "#Hex2", "#Hex3"],
+  "font": "Font Name (e.g., Aptos Display, Calibri, Inter)",
   "slides": [
     {{
       "title": "Slide Title",
@@ -45,19 +49,13 @@ CONTENT REQUIREMENTS:
 
 2. SPEAKER NOTES (2-3 sentences)
 
-3. IMAGE PROMPT (1 sentence)
-
-4. THEME (optional styling)
+3. IMAGE PROMPT (1 sentence describing a relevant visual)
 
 OUTPUT FORMAT (valid JSON only):
 {{
-  "bullets": [...],
+  "bullets": ["...", "..."],
   "notes": "...",
-  "image_prompt": "...",
-  "theme": {{
-    "font": "Calibri",
-    "color": "#1E40AF"
-  }}
+  "image_prompt": "..."
 }}
 
 CRITICAL RULES:
@@ -83,24 +81,18 @@ CONTENT REQUIREMENTS:
 
 2. SPEAKER NOTES (2-3 sentences)
 
-3. IMAGE PROMPT (1 sentence)
-
-4. THEME (optional styling)
+3. IMAGE PROMPT (1 sentence describing a relevant visual)
 
 OUTPUT FORMAT (valid JSON only):
 {{
-  "bullets": [...],
+  "bullets": ["...", "..."],
   "notes": "...",
-  "image_prompt": "...",
-  "theme": {{
-    "font": "Calibri",
-    "color": "#1E40AF"
-  }}
+  "image_prompt": "..."
 }}
 
 CRITICAL RULES:
 - Return ONLY valid JSON. Do not wrap in markdown code blocks.
-- Generate FRESH content that is different from the previous version
+- Generate FRESH content that is different from the previous version.
 """
 
 
@@ -109,6 +101,7 @@ BATCH_SLIDE_PROMPT = """Create content for multiple PowerPoint slides in one go.
 PRESENTATION CONTEXT:
 - Topic: {topic}
 - Audience: {audience}
+- Theme/Branding: {theme_instruction}
 
 SLIDES TO DRAFT:
 {slides_specs}
@@ -118,20 +111,17 @@ CONTENT REQUIREMENTS FOR EACH SLIDE:
    - Concise and actionable (max 10-12 words)
    - Focus on key takeaways
 2. SPEAKER NOTES (2-3 sentences)
-3. IMAGE PROMPT (1 sentence)
-4. THEME (optional styling: font and color)
+3. IMAGE PROMPT (1 sentence describing a relevant professional visual)
 
 OUTPUT FORMAT (valid JSON only):
 {{
   "slides": [
     {{
       "title": "Slide Title",
-      "bullets": ["Bullet 1", "Bullet 2", ...],
+      "bullets": ["Bullet 1", "Bullet 2"],
       "notes": "...",
-      "image_prompt": "...",
-      "theme": {{"font": "...", "color": "..."}}
-    }},
-    ...
+      "image_prompt": "..."
+    }}
   ]
 }}
 
@@ -139,4 +129,18 @@ CRITICAL RULES:
 - Return ONLY valid JSON.
 - Ensure the "slides" array matches the number and order of slides requested.
 - No markdown, no filler text.
+"""
+
+
+IMAGE_GENERATION_SYSTEM_PROMPT = """You are a professional graphic designer and presentation specialist.
+
+Your task is to generate high-quality, professional images for presentation slides from the image prompt.
+
+"""
+
+
+IMAGE_GENERATION_USER_PROMPT = """Generate a presentation slide based on the following content:
+
+{image_prompt}
+
 """

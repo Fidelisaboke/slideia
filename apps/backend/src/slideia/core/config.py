@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     DOWNLOADS_DIR: Path = DOWNLOADS_DIR
     LOG_LEVEL: str = "INFO"
     UNSPLASH_ACCESS_KEY: str
+    GEMINI_API_KEY: str
+    GEMINI_IMAGE_MODEL: str
     MAX_CONCURRENT_LLM_CALLS: int = 2
 
 

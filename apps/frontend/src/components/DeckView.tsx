@@ -2,13 +2,22 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "motion/react";
-import { Download, RotateCcw, CheckCircle2, FileText } from "lucide-react";
-import { GenerateDeckResponse, SlideExportItem } from "@/types/api";
+import {
+  Download,
+  RotateCcw,
+  CheckCircle2,
+  FileText,
+  Palette,
+} from "lucide-react";
+import {
+  GenerateDeckResponse,
+  SlideExportItem,
+  ThemePreset,
+  THEME_PRESETS,
+} from "@/types/api";
 import { apiClient } from "@/lib/apiClient";
 import EditableSlide from "@/components/EditableSlide";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
-
-// Exported instance from apiClient.ts
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -27,6 +36,7 @@ interface DeckViewProps {
   audience: string;
   tone: string;
   slideCount: number;
+  themePreset: ThemePreset;
   onReset: () => void;
 }
 
@@ -52,6 +62,7 @@ export default function DeckView({
   deck,
   topic,
   audience,
+  themePreset,
   onReset,
 }: DeckViewProps) {
   const [slides, setSlides] = useState<EditableSlideData[]>(() =>
@@ -134,11 +145,15 @@ export default function DeckView({
                 topic,
                 audience,
                 slides: exportSlides,
+                palette: themeMeta.palette,
+                font: themeMeta.font,
               })
             : await apiClient.exportPdf({
                 topic,
                 audience,
                 slides: exportSlides,
+                palette: themeMeta.palette,
+                font: themeMeta.font,
               });
 
         const downloadUrl = apiClient.getDownloadUrl(response.download_url);
@@ -155,6 +170,9 @@ export default function DeckView({
     },
     [slides, topic, audience],
   );
+
+  // Resolve theme metadata for display
+  const themeMeta = THEME_PRESETS[themePreset];
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -174,9 +192,34 @@ export default function DeckView({
         <h2 className="text-2xl font-bold font-(family-name:--font-sora) text-foreground mb-1">
           {deck.outline.title}
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-3">
           Review and edit your slides below, then export when ready.
         </p>
+
+        {/* ── Active Theme Badge ──────────────────────────────────── */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted/40 text-xs font-medium">
+          <Palette
+            className="w-3.5 h-3.5 shrink-0"
+            style={{ color: themeMeta.palette[0] }}
+          />
+          <span className="text-muted-foreground">Theme:</span>
+          <span className="font-semibold text-foreground">
+            {themeMeta.label}
+          </span>
+          {/* Colour swatches */}
+          <span className="flex items-center gap-0.5 ml-0.5">
+            {themeMeta.palette.map((c, i) => (
+              <span
+                key={i}
+                className="inline-block w-2.5 h-2.5 rounded-full border border-black/10 dark:border-white/20"
+                style={{ background: c }}
+              />
+            ))}
+          </span>
+          <span className="pl-1 border-l border-border text-muted-foreground">
+            {themeMeta.font}
+          </span>
+        </div>
       </motion.div>
 
       {/* ── Export Error ───────────────────────────────────────────── */}

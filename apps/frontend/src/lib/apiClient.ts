@@ -3,7 +3,6 @@ import {
   GenerateDeckResponse,
   ProposeOutlineRequest,
   ProposeOutlineResponse,
-  ExportPptxRequest,
   ExportPptxResponse,
   RegenerateSlideRequest,
   RegenerateSlideResponse,
@@ -152,9 +151,7 @@ export const apiClient = {
     });
   },
 
-  async exportPptx(
-    data: ExportPptxRequest | FullDeckExportRequest,
-  ): Promise<ExportPptxResponse> {
+  async exportPptx(data: FullDeckExportRequest): Promise<ExportPptxResponse> {
     return request<ExportPptxResponse>("/export-pptx", {
       method: "POST",
       body: JSON.stringify(data),

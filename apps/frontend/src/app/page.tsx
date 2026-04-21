@@ -11,6 +11,7 @@ import ErrorAlert from "@/components/ErrorAlert";
 import GenerationProgress from "@/components/GenerationProgress";
 import { apiClient } from "@/lib/apiClient";
 import {
+  ThemePreset,
   ProposeOutlineResponse,
   GenerateDeckResponse,
   GenerationProgressEvent,
@@ -24,6 +25,7 @@ export default function Home() {
   const [audience, setAudience] = useState("");
   const [tone, setTone] = useState("professional");
   const [slideCount, setSlideCount] = useState(5);
+  const [themePreset, setThemePreset] = useState<ThemePreset>("Purple Mint");
   const [outline, setOutline] = useState<ProposeOutlineResponse | null>(null);
   const [deck, setDeck] = useState<GenerateDeckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,11 +51,13 @@ export default function Home() {
     audience: string;
     tone: string;
     slideCount: number;
+    themePreset: ThemePreset;
   }) => {
     setTopic(data.topic);
     setAudience(data.audience);
     setTone(data.tone);
     setSlideCount(data.slideCount);
+    setThemePreset(data.themePreset);
     setError(null);
 
     // Switch to progress overlay immediately
@@ -73,6 +77,7 @@ export default function Home() {
           audience: data.audience,
           tone: data.tone,
           slide_count: data.slideCount,
+          theme_preset: data.themePreset,
         },
         (event: GenerationProgressEvent) => {
           if (event.step === "outline") {
@@ -143,6 +148,7 @@ export default function Home() {
           audience,
           tone,
           slide_count: slideCount,
+          theme_preset: themePreset,
         },
         (event: GenerationProgressEvent) => {
           if (event.step === "outline") {
@@ -207,6 +213,7 @@ export default function Home() {
     setAudience("");
     setTone("professional");
     setSlideCount(5);
+    setThemePreset("Purple Mint");
     setOutline(null);
     setDeck(null);
     setError(null);
@@ -283,6 +290,7 @@ export default function Home() {
                   audience={audience}
                   tone={tone}
                   slideCount={slideCount}
+                  themePreset={themePreset}
                   onReset={handleReset}
                 />
               )}
