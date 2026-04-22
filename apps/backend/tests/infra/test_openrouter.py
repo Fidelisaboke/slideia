@@ -46,9 +46,14 @@ async def test_llm_call_success(llm):
     mock_resp.json.return_value = {"choices": [{"message": {"content": '```json\n{"result": "ok"}\n```'}}]}
     mock_resp.raise_for_status = MagicMock()
 
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
         result = await llm._execute_call("test prompt")
         assert result == {"result": "ok"}
+
+        # Verify response_format is NOT in the payload
+        args, kwargs = mock_post.call_args
+        payload = kwargs.get("json", {})
+        assert "response_format" not in payload
 
 
 @pytest.mark.asyncio
@@ -79,6 +84,23 @@ async def test_llm_call_retry_success(llm):
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             result = await llm._call("test prompt")
             assert result == {"status": "retry_success"}
+            assert mock_exec.call_count == 2
+            mock_sleep.assert_awaited_once_with(2.0)
+
+
+@pytest.mark.asyncio
+async def test_llm_call_null_content_retry(llm):
+    """Verify that null content triggers a retry."""
+    with patch.object(llm, "_execute_call", new_callable=AsyncMock) as mock_exec:
+        # 1st call returns ValueError(null content), 2nd is success
+        mock_exec.side_effect = [
+            ValueError("OpenRouter returned null content. ..."),
+            {"status": "recovered"},
+        ]
+
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            result = await llm._call("test prompt")
+            assert result == {"status": "recovered"}
             assert mock_exec.call_count == 2
             mock_sleep.assert_awaited_once_with(2.0)
 
@@ -165,7 +187,9 @@ async def test_llm_stream_call_retry(llm):
 async def test_llm_draft_slides_batch(llm):
     with patch.object(llm, "_call", new_callable=AsyncMock) as mock_call:
         mock_call.return_value = {"slides": [{"title": "S1"}, {"title": "S2"}]}
-        result = await llm.draft_slides_batch("Topic", "Audience", [{"title": "S1"}, {"title": "S2"}])
+        result = await llm.draft_slides_batch(
+            "Topic", "Audience", [{"title": "S1"}, {"title": "S2"}], theme_instruction="Purple Mint"
+        )
         assert len(result["slides"]) == 2
         assert result["slides"][0]["title"] == "S1"
         assert mock_call.call_count == 1
