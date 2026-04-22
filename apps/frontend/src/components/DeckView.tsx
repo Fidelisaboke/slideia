@@ -122,6 +122,9 @@ export default function DeckView({
     [slides],
   );
 
+  // Resolve theme metadata for display
+  const themeMeta = THEME_PRESETS[themePreset];
+
   // ── Export the modified deck ──────────────────────────────────────
 
   const handleExport = useCallback(
@@ -168,11 +171,8 @@ export default function DeckView({
         setExportingType(null);
       }
     },
-    [slides, topic, audience],
+    [slides, topic, audience, themeMeta.palette, themeMeta.font],
   );
-
-  // Resolve theme metadata for display
-  const themeMeta = THEME_PRESETS[themePreset];
 
   return (
     <div className="w-full max-w-4xl mx-auto">
