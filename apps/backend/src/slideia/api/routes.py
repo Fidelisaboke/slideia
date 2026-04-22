@@ -34,7 +34,7 @@ if settings.ENVIRONMENT == "test":
 else:
     cache = RedisCache()
 
-llm = OpenRouterLLM(api_key=settings.OPENROUTER_API_KEY, model=settings.OPENROUTER_MODEL)
+llm = OpenRouterLLM(api_key=settings.OPENROUTER_API_KEY.get_secret_value(), model=settings.OPENROUTER_MODEL)
 
 
 @router.post("/propose-outline")

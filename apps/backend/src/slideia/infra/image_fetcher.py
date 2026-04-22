@@ -10,7 +10,7 @@ class ImageFetcher:
     def __init__(self):
         self.unsplash_url = "https://api.unsplash.com/search/photos"
         self.unsplash_headers = {
-            "Authorization": f"Client-ID {settings.UNSPLASH_ACCESS_KEY}",
+            "Authorization": f"Client-ID {settings.UNSPLASH_ACCESS_KEY.get_secret_value()}",
             "Accept-Version": "v1",
         }
 

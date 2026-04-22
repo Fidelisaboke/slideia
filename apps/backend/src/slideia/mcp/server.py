@@ -10,7 +10,7 @@ from slideia.domain.deck.exporter import export_slides
 from slideia.infra.openrouter import OpenRouterLLM
 
 mcp = FastMCP(name="slideia")
-llm = OpenRouterLLM(settings.OPENROUTER_API_KEY, settings.OPENROUTER_MODEL)
+llm = OpenRouterLLM(settings.OPENROUTER_API_KEY.get_secret_value(), settings.OPENROUTER_MODEL)
 
 
 @mcp.tool()

@@ -82,7 +82,10 @@ async def export_slides(input_path: str, output_path: str):
         content_slide = prs.slides.add_slide(blank_layout)
 
         # Use slide-specific theme if present, otherwise fallback to global
-        slide_theme = s.get("theme") or {}
+        slide_theme = s.get("theme")
+        if not isinstance(slide_theme, dict):
+            slide_theme = {}
+
         global_font = data.get("font", "Calibri")
         global_palette = data.get("palette", [])
 
