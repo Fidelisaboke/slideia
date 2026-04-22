@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import SlideForm from "@/components/SlideForm";
 import { fadeInUp, fadeInRight, staggerContainer } from "@/lib/motion";
+import { ThemePreset } from "@/types/api";
 
 interface HeroProps {
   onSubmit: (data: {
@@ -10,6 +11,7 @@ interface HeroProps {
     audience: string;
     tone: string;
     slideCount: number;
+    themePreset: ThemePreset;
   }) => void;
   isLoading: boolean;
 }

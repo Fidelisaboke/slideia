@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from collections.abc import AsyncGenerator
@@ -51,7 +52,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         self.model = model
 
     async def _call(self, prompt: str, max_tokens: int = 2048) -> dict:
-        """Call OpenRouter with exponential backoff for rate limits."""
+        """Call OpenRouter with exponential backoff for rate limits and null-content retries."""
         max_retries = 3
         base_delay = 2.0
 
@@ -59,18 +60,25 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             try:
                 return await self._execute_call(prompt, max_tokens)
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 429:
-                    if attempt < max_retries - 1:
-                        delay = base_delay * (2**attempt)
-                        logger.warning(
-                            f"Rate limit hit (429). Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
-                        )
-                        import asyncio
-
-                        await asyncio.sleep(delay)
-                        continue
+                if e.response.status_code == 429 and attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    logger.warning(
+                        f"Rate limit hit (429). Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                    )
+                    await asyncio.sleep(delay)
+                    continue
                 raise
-        # This point should not be reached due to 'raise' above
+            except ValueError as e:
+                # Retry for null content
+                if "null content" in str(e) and attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    logger.warning(
+                        f"Model returned null content. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+
         raise RuntimeError("Max retries exceeded")
 
     async def _execute_call(self, prompt: str, max_tokens: int = 2048) -> dict:
@@ -80,7 +88,6 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
-                "response_format": {"type": "json_object"},
             }
 
             response = await client.post(
@@ -127,12 +134,15 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                 logger.error(f"JSON parsing failed for extracted content: {extracted[:200]}...")
                 raise ValueError(f"Failed to parse JSON response: {e}")
 
-    async def propose_outline(self, topic: str, audience: str, tone: str, slide_count: int) -> dict:
+    async def propose_outline(
+        self, topic: str, audience: str, tone: str, slide_count: int, theme_instruction: str = "Default"
+    ) -> dict:
         prompt = OUTLINE_PROMPT.format(
             topic=topic,
             audience=audience,
             tone=tone,
             slide_count=slide_count,
+            theme_instruction=theme_instruction,
         )
         return await self._call(prompt)
 
@@ -143,7 +153,9 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         )
         return await self._call(prompt)
 
-    async def draft_slides_batch(self, topic: str, audience: str, slide_specs: list[dict]) -> dict:
+    async def draft_slides_batch(
+        self, topic: str, audience: str, slide_specs: list[dict], theme_instruction: str = "Default"
+    ) -> dict:
         """Draft content for multiple slides in a single LLM call."""
         specs_str = "\n".join(
             [
@@ -155,6 +167,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             topic=topic,
             audience=audience,
             slides_specs=specs_str,
+            theme_instruction=theme_instruction,
         )
         # Increase max_tokens for batch calls
         return await self._call(prompt, max_tokens=4096)
@@ -186,7 +199,8 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             try:
                 async for chunk in self._execute_stream_call(messages, max_tokens):
                     yield chunk
-                return  # Successfully finished streaming
+                # Successfully finished streaming
+                return
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
                     if attempt < max_retries - 1:
@@ -194,8 +208,6 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                         logger.warning(
                             f"Rate limit hit (429) during stream initiation. Retrying in {delay}s... (Attempt {attempt + 1}/{max_retries})"
                         )
-                        import asyncio
-
                         await asyncio.sleep(delay)
                         continue
                 raise

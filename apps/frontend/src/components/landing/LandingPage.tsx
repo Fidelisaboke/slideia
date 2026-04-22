@@ -3,6 +3,7 @@
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
 import HowItWorks from "@/components/landing/HowItWorks";
+import { ThemePreset } from "@/types/api";
 
 interface LandingPageProps {
   onSubmit: (data: {
@@ -10,6 +11,7 @@ interface LandingPageProps {
     audience: string;
     tone: string;
     slideCount: number;
+    themePreset: ThemePreset;
   }) => void;
   isLoading: boolean;
 }

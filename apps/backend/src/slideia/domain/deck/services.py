@@ -1,5 +1,6 @@
 import asyncio
 from typing import AsyncGenerator
+
 from pptx import Presentation
 from slideia.core.config import settings
 from slideia.core.logging import get_logger
@@ -45,6 +46,7 @@ async def generate_full_deck(
     slide_count: int,
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
+    theme_preset: str = "Default",
 ) -> Deck:
     cached = cache.get(topic, audience, tone, slide_count)
     if cached:
@@ -55,23 +57,28 @@ async def generate_full_deck(
 
     logger.info("Generating new deck...")
 
-    outline = await llm.propose_outline(
+    outline_data = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
         slide_count=slide_count,
+        theme_instruction=theme_preset,
     )
 
     # Use Semaphore to limit concurrent calls to respect rate limits
     semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_LLM_CALLS)
     batch_size = 3
-    slide_specs = outline.get("slides", [])
+    slide_specs = outline_data.get("slides", [])
     batches = [slide_specs[i : i + batch_size] for i in range(0, len(slide_specs), batch_size)]
 
     async def process_batch(batch):
         async with semaphore:
-            result = await llm.draft_slides_batch(topic, audience, batch)
-            return result.get("slides", [])
+            try:
+                result = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                return result.get("slides", [])
+            except Exception as e:
+                logger.error(f"Batch generation failed, skipping {len(batch)} slides: {e}")
+                return []
 
     logger.info(f"Drafting {len(slide_specs)} slides in {len(batches)} batches...")
     tasks = [process_batch(b) for b in batches]
@@ -82,7 +89,7 @@ async def generate_full_deck(
 
     logger.info("Deck generation complete!")
     result = {
-        "outline": outline,
+        "outline": outline_data,
         "slides": slides_content,
     }
 
@@ -90,8 +97,10 @@ async def generate_full_deck(
     logger.info("Cached the generated deck.")
 
     return Deck(
-        outline=outline,
+        outline=outline_data,
         slides=[Slide(**s) for s in slides_content],
+        palette=outline_data.get("palette"),
+        font=outline_data.get("font"),
     )
 
 
@@ -102,6 +111,7 @@ async def generate_full_deck_stream(
     slide_count: int,
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
+    theme_preset: str = "Default",
 ) -> AsyncGenerator[dict, None]:
     """
     Generate a full deck and yield progress events.
@@ -117,14 +127,15 @@ async def generate_full_deck_stream(
     # Step 1: Outline
     yield {"step": "outline", "progress": 10, "message": "Analyzing topic and structuring the story..."}
 
-    outline = await llm.propose_outline(
+    outline_data = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
         slide_count=slide_count,
+        theme_instruction=theme_preset,
     )
 
-    slide_specs = outline.get("slides", [])
+    slide_specs = outline_data.get("slides", [])
     total_slides = len(slide_specs)
     slides_content = [None] * total_slides
     slides_processed = 0
@@ -136,8 +147,12 @@ async def generate_full_deck_stream(
 
     async def process_batch_with_progress(batch, start_idx):
         async with semaphore:
-            result = await llm.draft_slides_batch(topic, audience, batch)
-            return result.get("slides", []), start_idx
+            try:
+                result = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                return result.get("slides", []), start_idx
+            except Exception as e:
+                logger.error(f"Batch failed (slides {start_idx + 1}–{start_idx + len(batch)}): {e}")
+                return [], start_idx
 
     tasks = [process_batch_with_progress(b, i * batch_size) for i, b in enumerate(batches)]
 
@@ -164,8 +179,10 @@ async def generate_full_deck_stream(
 
     # Step 3: Complete
     result = {
-        "outline": outline,
+        "outline": outline_data,
         "slides": slides_content,
+        "palette": outline_data.get("palette"),
+        "font": outline_data.get("font"),
     }
 
     cache.set(topic, audience, tone, slide_count, result)
@@ -180,6 +197,7 @@ async def propose_outline_stream(
     slide_count: int,
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
+    theme_preset: str = "Default",
 ) -> AsyncGenerator[dict, None]:
     """
     Propose an outline and yield progress events.
@@ -209,6 +227,7 @@ async def propose_outline_stream(
         audience=audience,
         tone=tone,
         slide_count=slide_count,
+        theme_instruction=theme_preset,
     )
 
     yield {"step": "outline", "progress": 90, "message": "Finalizing presentation structure..."}

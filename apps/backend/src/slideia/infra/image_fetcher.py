@@ -1,29 +1,37 @@
 import logging
-import os
 
 import httpx
+from slideia.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
 
 
 class ImageFetcher:
     def __init__(self):
-        self.base_url = "https://api.unsplash.com/search/photos"
-        self.headers = {
-            "Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}",
+        self.unsplash_url = "https://api.unsplash.com/search/photos"
+        self.unsplash_headers = {
+            "Authorization": f"Client-ID {settings.UNSPLASH_ACCESS_KEY.get_secret_value()}",
             "Accept-Version": "v1",
         }
 
     async def fetch_image_url(self, query: str) -> str | None:
         """
         Searches for an image and returns the URL.
-        Returns None if no image found or API fails.
         """
-        if not query or not UNSPLASH_ACCESS_KEY:
+        if not query:
             return None
 
+        # Try Unsplash first
+        if settings.UNSPLASH_ACCESS_KEY:
+            url = await self._fetch_unsplash_url(query)
+            if url:
+                return url
+
+        # TODO: Fallback to AI image generation once implemented
+
+        return None
+
+    async def _fetch_unsplash_url(self, query: str) -> str | None:
         params = {
             "query": query,
             "per_page": 1,
@@ -33,20 +41,25 @@ class ImageFetcher:
 
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.get(self.base_url, headers=self.headers, params=params)
+                response = await client.get(self.unsplash_url, headers=self.unsplash_headers, params=params)
 
                 if response.status_code == 200:
                     data = response.json()
                     results = data.get("results", [])
                     if results:
-                        # Get the 'regular' size URL (good balance of quality/size)
                         return results[0]["urls"]["regular"]
                 else:
                     logger.warning(f"Unsplash API Error: {response.status_code}")
-
         except Exception as e:
-            logger.error(f"Failed to fetch image for query '{query}': {e}")
+            logger.error(f"Failed to fetch Unsplash image for query '{query}': {e}")
 
+        return None
+
+    async def generate_image(self, prompt: str) -> str | None:
+        """
+        Generates an image using an Image Generator model.
+        TODO: Implement image generation.
+        """
         return None
 
     async def download_image(self, url: str) -> bytes | None:

@@ -81,29 +81,32 @@ async def export_slides(input_path: str, output_path: str):
 
         content_slide = prs.slides.add_slide(blank_layout)
 
-        # Get theme settings - HANDLE TYPE MISMATCHES
-        theme = s.get("theme", {})
-        if not isinstance(theme, dict):
-            logger.warning(f"Theme is {type(theme)}, expected dict. Using empty dict.")
-            theme = {}
+        # Use slide-specific theme if present, otherwise fallback to global
+        slide_theme = s.get("theme")
+        if not isinstance(slide_theme, dict):
+            slide_theme = {}
 
-        font_name = theme.get("font", "Calibri")
-        if not isinstance(font_name, str):
-            logger.warning(f"Font is {type(font_name)}, expected str. Using 'Calibri'.")
-            font_name = "Calibri"
+        global_font = data.get("font", "Calibri")
+        global_palette = data.get("palette", [])
 
-        # Parse color if provided
+        # Set slide font
+        # Priority: Slide Font -> Global Font -> Default
+        font_name = slide_theme.get("font") or global_font or "Calibri"
+
+        # Set slide colour
+        # Priority: Slide Color -> Global Palette[0] -> Default (#000000)
         font_color = None
-        if "color" in theme:
-            color_value = theme["color"]
-            if isinstance(color_value, str):
-                try:
-                    rgb = color_value.lstrip("#")
+        color_hex = slide_theme.get("color")
+        if not color_hex and global_palette:
+            color_hex = global_palette[0]
+
+        if color_hex:
+            try:
+                rgb = color_hex.lstrip("#")
+                if len(rgb) == 6:
                     font_color = RGBColor(int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16))
-                except Exception as e:
-                    logger.warning(f"Color parsing failed: {e}")
-            else:
-                logger.warning(f"Color is {type(color_value)}, expected str")
+            except Exception as e:
+                logger.warning(f"Color parsing failed for '{color_hex}': {e}")
 
         # Get title - SAFE EXTRACTION
         title_text = s.get("title", f"Slide {slide_index + 1}")
@@ -239,10 +242,12 @@ async def export_slides(input_path: str, output_path: str):
             image_prompt = str(image_prompt) if image_prompt else ""
         image_prompt = image_prompt.strip()
 
-        # Image dimensions and position
-        img_left = Inches(7)
-        img_top = Inches(1.5)
-        img_width = Inches(2.5)
+        # Image dimensions and position — right-column layout
+        # Start low enough to clear the title bar and give breathing room
+        img_left = Inches(6.8)
+        img_top = Inches(2.5)
+        img_width = Inches(2.7)
+        img_height = Inches(1.8)
 
         pic = None
 
@@ -254,7 +259,9 @@ async def export_slides(input_path: str, output_path: str):
                     response = await client.get(image_url)
                 if response.status_code == 200:
                     image_stream = BytesIO(response.content)
-                    pic = content_slide.shapes.add_picture(image_stream, img_left, img_top, width=img_width)
+                    pic = content_slide.shapes.add_picture(
+                        image_stream, img_left, img_top, width=img_width, height=img_height
+                    )
                 else:
                     logger.warning(f"Failed to download image: status {response.status_code}")
             except Exception as e:
@@ -263,7 +270,9 @@ async def export_slides(input_path: str, output_path: str):
         # If no URL or download failed, try local path
         if not pic and image_path and os.path.exists(image_path):
             try:
-                pic = content_slide.shapes.add_picture(image_path, img_left, img_top, width=img_width)
+                pic = content_slide.shapes.add_picture(
+                    image_path, img_left, img_top, width=img_width, height=img_height
+                )
             except Exception as e:
                 logger.warning(f"Image insert failed: {e}")
 
@@ -278,8 +287,7 @@ async def export_slides(input_path: str, output_path: str):
         # Fallback: if no picture was created, create a placeholder box
         if not pic and image_prompt:
             logger.info("Using placeholder shape for image.")
-            height = Inches(2)
-            textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, height)
+            textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, img_height)
 
             textbox_frame = textbox.text_frame
             textbox_frame.text = f"[Image: {image_prompt}]"
