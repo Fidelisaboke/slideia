@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import ThemeSelector from "@/components/ThemeSelector";
+import { ThemePreset } from "@/types/api";
 
 interface SlideFormProps {
   onSubmit: (data: {
@@ -8,6 +10,7 @@ interface SlideFormProps {
     audience: string;
     tone: string;
     slideCount: number;
+    themePreset: ThemePreset;
   }) => void;
   isLoading: boolean;
 }
@@ -15,13 +18,14 @@ interface SlideFormProps {
 export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
   const [topic, setTopic] = useState("");
   const [audience, setAudience] = useState("");
-  const [tone, setTone] = useState("");
+  const [tone, setTone] = useState("professional");
   const [slideCount, setSlideCount] = useState(5);
+  const [themePreset, setThemePreset] = useState<ThemePreset>("Purple Mint");
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (topic.trim() && audience.trim()) {
-      onSubmit({ topic, audience, tone, slideCount });
+      onSubmit({ topic, audience, tone, slideCount, themePreset });
     }
   };
 
@@ -31,7 +35,8 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
         Create Your Presentation
       </h2>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
+        {/* Topic */}
         <div>
           <label
             htmlFor="topic"
@@ -54,6 +59,7 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
           />
         </div>
 
+        {/* Audience */}
         <div>
           <label
             htmlFor="audience"
@@ -76,56 +82,69 @@ export default function SlideForm({ onSubmit, isLoading }: SlideFormProps) {
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="tone"
-            className="block text-sm font-medium text-foreground mb-2"
-          >
-            Presentation Tone
-          </label>
-          <select
-            id="tone"
-            value={tone}
-            onChange={(e) => setTone(e.target.value)}
-            className="w-full px-4 py-2.5 bg-background-subtle border border-border rounded-lg
-                       text-foreground
-                       focus:ring-2 focus:ring-primary/40 focus:border-primary/50
-                       outline-none transition-all duration-200"
-            disabled={isLoading}
-          >
-            <option value="professional">Professional</option>
-            <option value="casual">Casual</option>
-            <option value="academic">Academic</option>
-            <option value="persuasive">Persuasive</option>
-            <option value="informative">Informative</option>
-            <option value="inspirational">Inspirational</option>
-          </select>
-        </div>
+        {/* Tone + Slide Count row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="tone"
+              className="block text-sm font-medium text-foreground mb-2"
+            >
+              Presentation Tone
+            </label>
+            <select
+              id="tone"
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+              className="w-full px-4 py-2.5 bg-background-subtle border border-border rounded-lg
+                         text-foreground
+                         focus:ring-2 focus:ring-primary/40 focus:border-primary/50
+                         outline-none transition-all duration-200"
+              disabled={isLoading}
+            >
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+              <option value="academic">Academic</option>
+              <option value="persuasive">Persuasive</option>
+              <option value="informative">Informative</option>
+              <option value="inspirational">Inspirational</option>
+            </select>
+          </div>
 
-        <div>
-          <label
-            htmlFor="slideCount"
-            className="block text-sm font-medium text-foreground mb-2"
-          >
-            Number of Slides:{" "}
-            <span className="text-primary font-semibold">{slideCount}</span>
-          </label>
-          <input
-            id="slideCount"
-            type="range"
-            min="3"
-            max="20"
-            value={slideCount}
-            onChange={(e) => setSlideCount(Number(e.target.value))}
-            className="w-full h-2 bg-background-subtle rounded-lg appearance-none cursor-pointer accent-primary"
-            disabled={isLoading}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>3</span>
-            <span>20</span>
+          <div>
+            <label
+              htmlFor="slideCount"
+              className="block text-sm font-medium text-foreground mb-2"
+            >
+              Slides:{" "}
+              <span className="text-primary font-semibold">{slideCount}</span>
+            </label>
+            <input
+              id="slideCount"
+              type="range"
+              min="3"
+              max="20"
+              value={slideCount}
+              onChange={(e) => setSlideCount(Number(e.target.value))}
+              className="w-full h-2 mt-3 bg-background-subtle rounded-lg appearance-none cursor-pointer accent-primary"
+              disabled={isLoading}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>3</span>
+              <span>20</span>
+            </div>
           </div>
         </div>
 
+        {/* Theme Selector */}
+        <div className="pt-1">
+          <ThemeSelector
+            value={themePreset}
+            onChange={setThemePreset}
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Submit */}
         <button
           type="submit"
           disabled={isLoading || !topic.trim() || !audience.trim()}

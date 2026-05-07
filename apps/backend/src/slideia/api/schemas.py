@@ -1,4 +1,13 @@
+from enum import StrEnum
+
 from pydantic import BaseModel
+
+
+class ThemePreset(StrEnum):
+    PURPLE_MINT = "Purple Mint"
+    CORPORATE_BLUE = "Corporate Blue"
+    MODERN_DARK = "Modern Dark"
+    DEFAULT = "Default"
 
 
 class ProposeOutlineRequest(BaseModel):
@@ -6,6 +15,7 @@ class ProposeOutlineRequest(BaseModel):
     audience: str
     tone: str
     slide_count: int
+    theme_preset: ThemePreset = ThemePreset.DEFAULT
 
 
 class DeckRequest(BaseModel):
@@ -13,14 +23,12 @@ class DeckRequest(BaseModel):
     audience: str
     tone: str
     slide_count: int
+    theme_preset: ThemePreset = ThemePreset.DEFAULT
 
 
 class ExportResponse(BaseModel):
     download_url: str
     filename: str
-
-
-# ── Slide Regeneration ────────────────────────────────────────────────
 
 
 class RegenerateSlideRequest(BaseModel):
@@ -29,9 +37,6 @@ class RegenerateSlideRequest(BaseModel):
     title: str
     summary: str
     instruction: str | None = None
-
-
-# ── Full Deck Export (user-edited state) ──────────────────────────────
 
 
 class SlideExportItem(BaseModel):
@@ -51,3 +56,5 @@ class FullDeckExportRequest(BaseModel):
     topic: str
     audience: str
     slides: list[SlideExportItem]
+    palette: list[str] | None = None
+    font: str | None = None

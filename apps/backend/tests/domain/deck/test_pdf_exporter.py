@@ -9,6 +9,8 @@ from slideia.domain.deck.pdf_exporter import export_deck_to_pdf
 def mock_deck_json(tmp_path):
     deck_data = {
         "title": "Test Presentation",
+        "palette": ["#7C3AED", "#10B981"],
+        "font": "Sora",
         "slides": [
             {
                 "title": "Slide 1",
@@ -59,3 +61,21 @@ async def test_export_deck_to_pdf_empty_slides(tmp_path):
     output_pdf = str(tmp_path / "empty.pdf")
     await export_deck_to_pdf(input_path, output_pdf)
     assert os.path.exists(output_pdf)
+
+
+@pytest.mark.asyncio
+async def test_export_deck_to_pdf_with_custom_palette(tmp_path):
+    """Test PDF export with a custom palette."""
+    deck_data = {
+        "title": "Custom Palette Deck",
+        "palette": ["#FF0000", "#00FF00"],  # Red and Green
+        "slides": [{"title": "S1", "bullets": ["B1"]}],
+    }
+    input_path = str(tmp_path / "custom.json")
+    with open(input_path, "w", encoding="utf-8") as f:
+        json.dump(deck_data, f)
+
+    output_pdf = str(tmp_path / "custom.pdf")
+    await export_deck_to_pdf(input_path, output_pdf)
+    assert os.path.exists(output_pdf)
+    assert os.path.getsize(output_pdf) > 0

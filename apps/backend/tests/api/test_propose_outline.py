@@ -21,6 +21,7 @@ def outline_request():
         "audience": "Developers",
         "tone": "Informative",
         "slide_count": 2,
+        "theme_preset": "Purple Mint",
     }
 
 

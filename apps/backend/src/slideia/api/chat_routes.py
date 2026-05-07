@@ -196,7 +196,7 @@ async def chat_stream(
 
     # ── 5. Stream the response ───────────────────────────────────────
     llm = OpenRouterLLM(
-        api_key=settings.OPENROUTER_API_KEY,
+        api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
         model=settings.OPENROUTER_MODEL,
     )
 

@@ -28,7 +28,6 @@ def full_deck_request():
                 "bullets": ["Point 1", "Point 2"],
                 "notes": "Speaker notes here",
                 "image_prompt": "A modern accessible interface",
-                "theme": {"font": "Sora", "color": "#A78BFA"},
             },
             {
                 "title": "Best Practices",
@@ -38,6 +37,8 @@ def full_deck_request():
                 "image_prompt": "Code snippet showing ARIA labels",
             },
         ],
+        "palette": ["#7C3AED", "#10B981"],
+        "font": "Sora",
     }
 
 

@@ -32,15 +32,14 @@ class DummyLLM:
         ]
         self._slide_idx = 0
 
-    async def propose_outline(self, topic, audience, tone, slide_count):
+    async def propose_outline(self, topic, audience, tone, slide_count, theme_instruction="Default"):
         return self._outline
 
-    async def draft_slide(self, slide_spec):
-        # This is now only used for single slide regeneration in production,
-        # but DummyLLM can keep it for simplicity.
-        return self._draft_one(slide_spec)
+    async def draft_slide(self, title, summary, instruction=None):
+        # Match current LLM interface
+        return self._draft_one({"title": title, "summary": summary})
 
-    async def draft_slides_batch(self, topic, audience, slide_specs):
+    async def draft_slides_batch(self, topic, audience, slide_specs, theme_instruction="Default"):
         # Simulation of batch drafting
         return {"slides": [self._draft_one(spec) for spec in slide_specs]}
 
@@ -77,7 +76,7 @@ class DummyCache:
 async def test_generate_full_deck_new_generation():
     llm = DummyLLM()
     cache = DummyCache()
-    deck = await generate_full_deck("topic", "audience", "tone", 2, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 2, llm, cache, theme_preset="Modern Dark")
     assert isinstance(deck, Deck)
     assert deck.outline["title"] == "Test Deck"
     assert len(deck.outline["slides"]) == 2
@@ -105,7 +104,7 @@ async def test_generate_full_deck_uses_cache():
         ],
     }
     cache._store[("topic", "audience", "tone", 1)] = cached
-    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache, theme_preset="Default")
     assert deck.outline["title"] == "Cached Deck"
     assert len(deck.slides) == 1
     assert deck.slides[0].title == "C1"
@@ -118,7 +117,7 @@ async def test_generate_full_deck_uses_cache():
 async def test_generate_full_deck_empty_outline():
     llm = DummyLLM(outline={"title": "Empty", "slides": []}, slides=[])
     cache = DummyCache()
-    deck = await generate_full_deck("topic", "audience", "tone", 0, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 0, llm, cache, theme_preset="Default")
     assert deck.outline["slides"] == []
     assert deck.slides == []
 
@@ -139,7 +138,7 @@ async def test_generate_full_deck_slide_type_handling():
         ],
     )
     cache = DummyCache()
-    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache)
+    deck = await generate_full_deck("topic", "audience", "tone", 1, llm, cache, theme_preset="Default")
     assert isinstance(deck, Deck)
     assert isinstance(deck.slides[0], Slide)
     assert str(deck.slides[0].title) == "123"
@@ -159,3 +158,20 @@ def test_create_minimal_template(tmp_path):
     assert len(prs.slides) == 2
     assert prs.slides[0].shapes.title.text == "Title Placeholder"
     assert prs.slides[1].shapes.title.text == "Content Title"
+
+
+@pytest.mark.asyncio
+async def test_generate_full_deck_batch_failure_resilience():
+    """Verify that generation continues even if one batch fails."""
+
+    class FailingLLM(DummyLLM):
+        async def draft_slides_batch(self, *args, **kwargs):
+            raise Exception("Batch Boom!")
+
+    llm = FailingLLM()
+    cache = DummyCache()
+    # Should not raise exception
+    deck = await generate_full_deck("topic", "audience", "tone", 2, llm, cache, theme_preset="Default")
+    assert isinstance(deck, Deck)
+    # Slides should be empty because the only batch failed
+    assert len(deck.slides) == 0

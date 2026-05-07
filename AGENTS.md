@@ -55,6 +55,33 @@ This project is a monorepo managed by Turborepo. Use `turbo` to run commands in 
 - **Comments**: Explain _why_, never _what_ — omit anything self-evident.
 - **Significant Refactors**: Include a brief before/after diff summary.
 
+## COMMIT MESSAGES
+
+Commit messages follow a conventional commit structure:
+
+```bash
+<type>(<scope>): <description>
+```
+
+### Types
+
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation only changes
+- style: Changes that do not affect the meaning of the code (white-space, formatting)
+- refactor: A code change that neither fixes a bug nor adds a feature
+- test: Adding missing tests or correcting existing tests
+- chore: Changes to the build process or auxiliary tools
+
+### Examples
+
+- `feat(api): add endpoint for generating full deck`
+- `fix(frontend): fix bug in slide editing`
+- `docs: add documentation for new endpoint`
+- `style: format code`
+- `test: add tests for new endpoint`
+- `chore: update dependencies`
+
 ## RESPONSE STRUCTURE
 
 1. **Approach** — 2–4 sentences on solution strategy and key design decisions (e.g., why this pattern over the obvious alternative).

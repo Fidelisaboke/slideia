@@ -28,19 +28,19 @@ def sample_deck_json(tmp_path):
     deck = {
         "title": "Accessibility in AI",
         "subtitle": "A modern approach",
+        "palette": ["#7C3AED", "#10B981"],
+        "font": "Sora",
         "slides": [
             {
                 "title": "Introduction",
                 "summary": "Why accessibility matters.",
                 "bullets": ["Legal requirements", "User experience"],
                 "image_prompt": "A person using a screen reader",
-                "theme": {"font": "Arial", "color": "#003366"},
             },
             {
                 "title": "Best Practices",
                 "summary": "How to make slides accessible.",
                 "bullets": ["Alt text for images", "High contrast colors"],
-                "theme": {"font": "Calibri", "color": "#222222"},
             },
         ],
     }

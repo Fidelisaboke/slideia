@@ -23,6 +23,7 @@ def deck_request():
         "audience": "Developers",
         "tone": "Casual",
         "slide_count": 2,
+        "theme_preset": "Modern Dark",
     }
 
 

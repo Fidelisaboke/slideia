@@ -21,6 +21,7 @@ def deck_request():
         "audience": "Developers",
         "tone": "Informative",
         "slide_count": 2,
+        "theme_preset": "Purple Mint",
     }
 
 
@@ -50,8 +51,16 @@ def fake_deck():
                 },
             ]
 
+            self.palette = ["#7C3AED", "#10B981"]
+            self.font = "Sora"
+
         def to_dict(self):
-            return {"outline": self.outline, "slides": self.slides}
+            return {
+                "outline": self.outline,
+                "slides": self.slides,
+                "palette": self.palette,
+                "font": self.font,
+            }
 
     return FakeDeck()
 
