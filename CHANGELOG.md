@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-05-07
+
+### Added
+
+- **Theme Customization**: Added support for theme selection when generating decks, allowing users to choose from various visual styles.
+- **Security Patches**: Upgraded Next.js and other dependencies to patch known vulnerabilities.
+- **Improved Resilience**: Enhanced LLM generation with better error handling and dependency tracking.
+
 ## [0.6.0] - 2026-04-16
 
 ### Added
@@ -29,4 +37,4 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-_Generated for Release 0.6.0_
+#### Release 0.7.0
