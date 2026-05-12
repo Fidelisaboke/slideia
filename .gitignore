@@ -65,3 +65,4 @@ temp/
 
 # Local caches
 .turbo/
+audit.json
