@@ -22,7 +22,14 @@ const SUGGESTIONS = [
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function ChatView() {
+interface ChatViewProps {
+  /** When true, renders in compact embedded mode (no fixed height, minimal header). */
+  compact?: boolean;
+  /** Called when the user clicks the close button in compact mode. */
+  onClose?: () => void;
+}
+
+export default function ChatView({ compact = false, onClose }: ChatViewProps) {
   const { messages, isStreaming, error, sendMessage, clearChat, dismissError } =
     useChat();
 
@@ -84,46 +91,102 @@ export default function ChatView() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] max-w-4xl mx-auto">
+    <div
+      className={`flex flex-col ${compact ? "h-full" : "h-[calc(100vh-2rem)] max-w-4xl mx-auto"}`}
+    >
       {/* ── Header ──────────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border glass-panel rounded-b-xl">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          {/* Creative Logo */}
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
-                          group-hover:-translate-y-0.5 transition-transform duration-300"
-          >
-            <span className="text-white font-bold text-sm font-(family-name:--font-sora)">
-              S
-            </span>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold font-(family-name:--font-sora) tracking-tight">
+      {compact ? (
+        /* Compact header — no logo link or theme toggle */
+        <header className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg gradient-button shadow-md">
+              <span className="text-white font-bold text-xs font-(family-name:--font-sora)">
+                S
+              </span>
+            </div>
+            <span className="text-sm font-semibold font-(family-name:--font-sora)">
               <span className="gradient-text">Slide</span>
-              <span className="text-foreground font-semibold">ia</span>
-              <span className="text-muted-foreground text-[10px] font-normal ml-1.5">
+              <span className="text-foreground">ia</span>
+              <span className="text-muted-foreground text-[10px] font-normal ml-1">
                 Chat
               </span>
-            </h1>
-            <p className="text-[10px] text-muted-foreground">
-              AI-powered presentation creator
-            </p>
+            </span>
           </div>
-        </Link>
 
-        <div className="flex items-center gap-2">
-          {hasMessages && (
-            <button
-              onClick={clearChat}
-              className="text-xs text-muted-foreground hover:text-primary
-                         transition-colors px-3 py-1.5 rounded-lg hover:bg-primary/10"
+          <div className="flex items-center gap-1">
+            {hasMessages && (
+              <button
+                onClick={clearChat}
+                className="text-xs text-muted-foreground hover:text-primary
+                           transition-colors px-2.5 py-1 rounded-lg hover:bg-primary/10"
+              >
+                New chat
+              </button>
+            )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                aria-label="Close chat"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground
+                           hover:bg-muted/50 transition-colors"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        </header>
+      ) : (
+        /* Full-page header — logo link + theme toggle */
+        <header className="flex items-center justify-between px-4 py-3 border-b border-border glass-panel rounded-b-xl">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div
+              className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
+                            group-hover:-translate-y-0.5 transition-transform duration-300"
             >
-              New chat
-            </button>
-          )}
-          <ThemeToggle />
-        </div>
-      </header>
+              <span className="text-white font-bold text-sm font-(family-name:--font-sora)">
+                S
+              </span>
+            </div>
+            <div>
+              <h1 className="text-sm font-bold font-(family-name:--font-sora) tracking-tight">
+                <span className="gradient-text">Slide</span>
+                <span className="text-foreground font-semibold">ia</span>
+                <span className="text-muted-foreground text-[10px] font-normal ml-1.5">
+                  Chat
+                </span>
+              </h1>
+              <p className="text-[10px] text-muted-foreground">
+                AI-powered presentation creator
+              </p>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            {hasMessages && (
+              <button
+                onClick={clearChat}
+                className="text-xs text-muted-foreground hover:text-primary
+                           transition-colors px-3 py-1.5 rounded-lg hover:bg-primary/10"
+              >
+                New chat
+              </button>
+            )}
+            <ThemeToggle />
+          </div>
+        </header>
+      )}
 
       {/* ── Messages area ───────────────────────────────────────── */}
       <div
