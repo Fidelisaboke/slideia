@@ -5,20 +5,22 @@ injects file contents as context into the LLM prompt, and streams the
 response back token-by-token as Server-Sent Events.
 """
 
+import asyncio
 import json
 from io import BytesIO
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
+from langchain_core.messages import AIMessage, HumanMessage
 
 from slideia.api.chat_schemas import ChatRequest
-from slideia.core.config import settings
 from slideia.core.logging import get_logger
-from slideia.infra.openrouter import OpenRouterLLM
+from slideia.domain.agent.graph import graph
 
 logger = get_logger(__name__)
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
+
 
 # ── Constants ────────────────────────────────────────────────────────────
 
@@ -155,9 +157,12 @@ async def chat_stream(
             detail=f"Too many files. Maximum is {MAX_FILES}.",
         )
 
-    # ── 3. Extract text from uploaded files ──────────────────────────
+    # ── 3. Extract text from uploaded files & handle limits ──────────
     file_contexts: list[str] = []
     total_size = 0
+    total_chars = 0
+    MAX_CHARACTER_LIMIT = 30000
+    truncated = False
 
     for upload in files:
         text = await _read_file_text(upload)
@@ -169,45 +174,91 @@ async def chat_stream(
                 detail="Total uploaded file size exceeds the 10 MB limit.",
             )
 
+        if total_chars + len(text) > MAX_CHARACTER_LIMIT:
+            allowed_len = MAX_CHARACTER_LIMIT - total_chars
+            text = text[:allowed_len]
+            truncated = True
+
+        total_chars += len(text)
         file_contexts.append(f"--- File: {upload.filename} ---\n{text}\n--- End of {upload.filename} ---")
+        if truncated:
+            file_contexts.append("\n\n[Warning: Reference document text was truncated to fit context limits]")
+            break
 
-    # ── 4. Build the LLM message list ────────────────────────────────
-    messages: list[dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    combined_file_context = "\n\n".join(file_contexts) if file_contexts else ""
 
-    # Inject file context into the system prompt if files are present
-    if file_contexts:
-        file_block = "\n\nThe user has provided the following files for context:\n\n" + "\n\n".join(
-            file_contexts
-        )
-        messages[0]["content"] += file_block
-
-    # Add conversation history
+    # ── 4. Set up the LangGraph Initial State ────────────────────────
+    initial_messages = []
     for msg in chat_request.conversation_history:
-        messages.append({"role": msg.role, "content": msg.content})
+        if msg.role == "user":
+            initial_messages.append(HumanMessage(content=msg.content))
+        else:
+            initial_messages.append(AIMessage(content=msg.content))
 
-    # Add the current user prompt
-    messages.append({"role": "user", "content": chat_request.prompt})
+    initial_state = {
+        "messages": initial_messages,
+        "topic": chat_request.topic or "",
+        "audience": chat_request.audience or "",
+        "tone": chat_request.tone or "",
+        "slide_count": chat_request.slide_count or 5,
+        "theme_preset": chat_request.theme_preset or "",
+        "deck": chat_request.deck,
+        "prompt": chat_request.prompt,
+        "file_context": combined_file_context,
+        "intent": "",
+        "instruction": None,
+        "error": None,
+        "retry_count": 0,
+    }
 
     logger.info(
-        f"Chat stream request: prompt_len={len(chat_request.prompt)}, "
+        f"Agent stream request: prompt_len={len(chat_request.prompt)}, "
         f"history_len={len(chat_request.conversation_history)}, "
-        f"files={len(file_contexts)}"
+        f"files={len(files)}, has_deck={chat_request.deck is not None}"
     )
 
-    # ── 5. Stream the response ───────────────────────────────────────
-    llm = OpenRouterLLM(
-        api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
-        model=settings.OPENROUTER_MODEL,
-    )
+    # ── 5. Run the LangGraph agent and stream response ───────────────
+    queue = asyncio.Queue()
+
+    async def run_agent_task():
+        try:
+            config = {"configurable": {"queue": queue}}
+            await graph.ainvoke(initial_state, config=config)
+        except Exception as e:
+            logger.error(f"Agent execution task failed: {e}")
+            await queue.put({"error": str(e)})
+        finally:
+            await queue.put({"done": True})
+
+    agent_task = asyncio.create_task(run_agent_task())
 
     async def event_generator():
         try:
-            async for token in llm.stream_call(messages):
-                yield _sse_event({"token": token})
+            if truncated:
+                yield _sse_event(
+                    {"token": "*(Note: Uploaded documents were truncated to fit context limits)*\n\n"}
+                )
+
+            while True:
+                item = await queue.get()
+                if "done" in item:
+                    break
+                if "error" in item:
+                    yield _sse_event({"error": item["error"]})
+                    break
+                if "token" in item:
+                    yield _sse_event({"token": item["token"]})
+                if "deck_update" in item:
+                    yield _sse_event({"deck_update": item["deck_update"]})
+                if "status" in item:
+                    yield _sse_event({"status": item["status"]})
+
             yield _sse_event({"done": True})
         except Exception as exc:
-            logger.error(f"Stream error: {exc}")
+            logger.error(f"SSE generator error: {exc}")
             yield _sse_event({"error": str(exc)})
+        finally:
+            await agent_task
 
     return StreamingResponse(
         event_generator(),

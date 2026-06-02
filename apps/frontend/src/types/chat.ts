@@ -54,8 +54,12 @@ export interface Conversation {
   updatedAt: number;
 }
 
+import { GenerateDeckResponse } from "./api";
+
 /** Discriminated union for SSE events from the backend. */
 export type StreamEvent =
   | { readonly token: string }
+  | { readonly status: string }
+  | { readonly deck_update: GenerateDeckResponse }
   | { readonly done: true }
   | { readonly error: string };

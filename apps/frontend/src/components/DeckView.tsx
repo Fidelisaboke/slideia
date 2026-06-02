@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
+import { useDeck } from "@/contexts/DeckContext";
 import {
   Download,
   RotateCcw,
@@ -65,8 +66,11 @@ export default function DeckView({
   themePreset,
   onReset,
 }: DeckViewProps) {
+  const { deck: contextDeck, setDeck } = useDeck();
+  const currentDeck = contextDeck || deck;
+
   const [slides, setSlides] = useState<EditableSlideData[]>(() =>
-    buildEditableSlides(deck),
+    buildEditableSlides(currentDeck),
   );
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null);
   const [exportingType, setExportingType] = useState<"pptx" | "pdf" | null>(
@@ -74,15 +78,53 @@ export default function DeckView({
   );
   const [exportError, setExportError] = useState<string | null>(null);
 
+  // Sync local slides state when the global deck is updated (e.g. from SSE updates)
+  useEffect(() => {
+    setSlides(buildEditableSlides(currentDeck));
+  }, [currentDeck]);
+
   // ── Update a single slide's fields ───────────────────────────────
 
   const handleUpdateSlide = useCallback(
     (index: number, updated: Partial<EditableSlideData>) => {
+      // 1. Update local state immediately for responsiveness
       setSlides((prev) =>
         prev.map((s, i) => (i === index ? { ...s, ...updated } : s)),
       );
+
+      // 2. Propagate the change to global DeckContext so the AI assistant gets the current state
+      if (!currentDeck) return;
+
+      const newOutlineSlides = [...currentDeck.outline.slides];
+      if (newOutlineSlides[index]) {
+        newOutlineSlides[index] = {
+          ...newOutlineSlides[index],
+          title: updated.title ?? newOutlineSlides[index].title,
+          summary: updated.summary ?? newOutlineSlides[index].summary,
+        };
+      }
+
+      const newSlides = [...currentDeck.slides];
+      if (newSlides[index]) {
+        newSlides[index] = {
+          ...newSlides[index],
+          bullets: updated.bullets ?? newSlides[index].bullets,
+          notes: updated.notes ?? newSlides[index].notes,
+          image_prompt: updated.image_prompt ?? newSlides[index].image_prompt,
+          theme: updated.theme ?? newSlides[index].theme,
+        };
+      }
+
+      setDeck({
+        ...currentDeck,
+        outline: {
+          ...currentDeck.outline,
+          slides: newOutlineSlides,
+        },
+        slides: newSlides,
+      });
     },
-    [],
+    [currentDeck, setDeck],
   );
 
   // ── Regenerate a single slide via the API ────────────────────────
@@ -100,26 +142,29 @@ export default function DeckView({
           instruction,
         });
 
-        setSlides((prev) =>
-          prev.map((s, i) =>
-            i === index
-              ? {
-                  ...s,
-                  bullets: result.bullets,
-                  notes: result.notes ?? s.notes,
-                  image_prompt: result.image_prompt ?? s.image_prompt,
-                }
-              : s,
-          ),
-        );
+        if (!currentDeck) return;
+
+        const newSlides = [...currentDeck.slides];
+        if (newSlides[index]) {
+          newSlides[index] = {
+            ...newSlides[index],
+            bullets: result.bullets,
+            notes: result.notes ?? newSlides[index].notes,
+            image_prompt: result.image_prompt ?? newSlides[index].image_prompt,
+          };
+        }
+
+        setDeck({
+          ...currentDeck,
+          slides: newSlides,
+        });
       } catch (err) {
         console.error("Failed to regenerate slide:", err);
-        // Optionally surface error — for now just log
       } finally {
         setRegeneratingIdx(null);
       }
     },
-    [slides],
+    [slides, currentDeck, setDeck],
   );
 
   // Resolve theme metadata for display

@@ -30,8 +30,15 @@ interface ChatViewProps {
 }
 
 export default function ChatView({ compact = false, onClose }: ChatViewProps) {
-  const { messages, isStreaming, error, sendMessage, clearChat, dismissError } =
-    useChat();
+  const {
+    messages,
+    isStreaming,
+    agentStatus,
+    error,
+    sendMessage,
+    clearChat,
+    dismissError,
+  } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -274,6 +281,17 @@ export default function ChatView({ compact = false, onClose }: ChatViewProps) {
           >
             <span className="sr-only">Dismiss</span>✕
           </button>
+        </div>
+      )}
+
+      {/* ── Agent Status indicator ──────────────────────────────── */}
+      {isStreaming && agentStatus && (
+        <div className="mx-4 mb-2 flex items-center gap-2 text-xs text-primary">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/70 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+          </span>
+          <span className="font-medium animate-pulse">{agentStatus}</span>
         </div>
       )}
 

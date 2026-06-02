@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { saveConversation, loadConversation } from "@/hooks/useChatStorage";
+import { useDeck } from "@/contexts/DeckContext";
 import {
   ChatMessage,
   Conversation,
@@ -34,6 +35,7 @@ function generateId(): string {
 interface UseChatReturn {
   messages: ChatMessage[];
   isStreaming: boolean;
+  agentStatus: string | null;
   error: string | null;
   conversationId: string;
   sendMessage: (prompt: string, files?: FileAttachment[]) => Promise<void>;
@@ -47,9 +49,23 @@ export function useChat(initialConversationId?: string): UseChatReturn {
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+
+  // Consume global deck context for synchronization
+  const {
+    deck,
+    topic,
+    audience,
+    tone,
+    slideCount,
+    themePreset,
+    setDeck,
+    setOutline,
+    setStep,
+  } = useDeck();
 
   // ── Restore from localStorage on mount ───────────────────────────
   useEffect(() => {
@@ -86,6 +102,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
       if (!prompt.trim() || isStreaming) return;
 
       setError(null);
+      setAgentStatus("Preparing request...");
 
       // 1. Build the optimistic user message
       const fileMeta: FileAttachmentMeta[] = (files || []).map((f) => ({
@@ -115,7 +132,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
       setIsStreaming(true);
 
-      // 3. Build the FormData payload
+      // 3. Build the FormData payload with global context
       const conversationHistory = messages.map((m) => ({
         role: m.role,
         content: m.content,
@@ -124,6 +141,12 @@ export function useChat(initialConversationId?: string): UseChatReturn {
       const payload = JSON.stringify({
         prompt,
         conversation_history: conversationHistory,
+        deck: deck || undefined,
+        topic: topic || undefined,
+        audience: audience || undefined,
+        tone: tone || undefined,
+        slide_count: slideCount || undefined,
+        theme_preset: themePreset || undefined,
       });
 
       const formData = new FormData();
@@ -195,6 +218,15 @@ export function useChat(initialConversationId?: string): UseChatReturn {
                 }
                 return updated;
               });
+            } else if ("status" in event) {
+              setAgentStatus(event.status);
+            } else if ("deck_update" in event) {
+              // Sync backend generated/modified deck to frontend global context
+              setDeck(event.deck_update);
+              if (event.deck_update.outline) {
+                setOutline(event.deck_update.outline);
+              }
+              setStep("deck");
             } else if ("error" in event) {
               setError(event.error);
             } else if ("done" in event) {
@@ -248,10 +280,23 @@ export function useChat(initialConversationId?: string): UseChatReturn {
         });
       } finally {
         setIsStreaming(false);
+        setAgentStatus(null);
         abortRef.current = null;
       }
     },
-    [isStreaming, messages],
+    [
+      isStreaming,
+      messages,
+      deck,
+      topic,
+      audience,
+      tone,
+      slideCount,
+      themePreset,
+      setDeck,
+      setOutline,
+      setStep,
+    ],
   );
 
   // ── Clear the chat ───────────────────────────────────────────────
@@ -260,6 +305,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
     setMessages([]);
     setError(null);
     setIsStreaming(false);
+    setAgentStatus(null);
   }, []);
 
   const dismissError = useCallback(() => setError(null), []);
@@ -267,6 +313,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
   return {
     messages,
     isStreaming,
+    agentStatus,
     error,
     conversationId,
     sendMessage,
