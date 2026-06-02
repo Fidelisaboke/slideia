@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useGenerationState } from "@/contexts/GenerationContext";
 import { motion } from "motion/react";
 import LandingPage from "@/components/landing/LandingPage";
 import Navbar from "@/components/landing/Navbar";
@@ -45,6 +46,12 @@ export default function Home() {
   >();
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
+
+  // ── Sync generation state to context (drives ChatBubble visibility) ──
+  const { setIsGenerating } = useGenerationState();
+  useEffect(() => {
+    setIsGenerating(isGeneratingDeck);
+  }, [isGeneratingDeck, setIsGenerating]);
 
   const handleFormSubmit = async (data: {
     topic: string;

@@ -251,7 +251,7 @@ export default function ChatInput({
             handleInput();
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the presentation you want to create…"
+          placeholder="Ask me to create a presentation…"
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm leading-relaxed
