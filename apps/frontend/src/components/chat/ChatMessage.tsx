@@ -194,6 +194,14 @@ function MarkdownContent({ content }: { content: string }) {
 
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyMessage = useCallback(() => {
+    navigator.clipboard.writeText(message.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [message.content]);
 
   return (
     <div
@@ -201,7 +209,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={`
-          max-w-[80%] rounded-2xl px-4 py-3
+          max-w-[80%] rounded-2xl pl-4 pr-8 py-3 relative group/msg
           ${
             isUser
               ? "gradient-button text-white rounded-br-md shadow-md shadow-primary/20"
@@ -209,6 +217,26 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           }
         `}
       >
+        {/* Copy Message Button */}
+        <button
+          onClick={handleCopyMessage}
+          className={`
+            absolute top-2 right-2 p-1.5 rounded-lg
+            transition-all duration-200 opacity-70 sm:opacity-0 group-hover/msg:opacity-100
+            ${
+              isUser
+                ? "bg-white/10 hover:bg-white/20 text-white/80 hover:text-white"
+                : "bg-primary/5 hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+            }
+          `}
+          title="Copy message"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 animate-pulse" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
+        </button>
         {/* File attachments (user messages only) */}
         {isUser && message.attachments && message.attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
