@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useGenerationState } from "@/contexts/GenerationContext";
+import { useDeck } from "@/contexts/DeckContext";
 import { motion } from "motion/react";
 import LandingPage from "@/components/landing/LandingPage";
 import Navbar from "@/components/landing/Navbar";
@@ -18,17 +19,27 @@ import {
   GenerationProgressEvent,
 } from "@/types/api";
 
-type Step = "form" | "outline" | "deck";
-
 export default function Home() {
-  const [step, setStep] = useState<Step>("form");
-  const [topic, setTopic] = useState("");
-  const [audience, setAudience] = useState("");
-  const [tone, setTone] = useState("professional");
-  const [slideCount, setSlideCount] = useState(5);
-  const [themePreset, setThemePreset] = useState<ThemePreset>("Purple Mint");
-  const [outline, setOutline] = useState<ProposeOutlineResponse | null>(null);
-  const [deck, setDeck] = useState<GenerateDeckResponse | null>(null);
+  const {
+    step,
+    setStep,
+    topic,
+    setTopic,
+    audience,
+    setAudience,
+    tone,
+    setTone,
+    slideCount,
+    setSlideCount,
+    themePreset,
+    setThemePreset,
+    outline,
+    setOutline,
+    deck,
+    setDeck,
+    resetDeckState,
+  } = useDeck();
+
   const [error, setError] = useState<string | null>(null);
 
   // ── Generation Progress State ────────────────────────────────────
@@ -215,14 +226,7 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setStep("form");
-    setTopic("");
-    setAudience("");
-    setTone("professional");
-    setSlideCount(5);
-    setThemePreset("Purple Mint");
-    setOutline(null);
-    setDeck(null);
+    resetDeckState();
     setError(null);
   };
 

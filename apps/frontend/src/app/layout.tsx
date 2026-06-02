@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sora, Inter, Geist_Mono } from "next/font/google";
 import ThemeProvider from "@/components/ThemeProvider";
 import { GenerationProvider } from "@/contexts/GenerationContext";
+import { DeckProvider } from "@/contexts/DeckContext";
 import ChatBubbleWrapper from "@/components/chat/ChatBubbleWrapper";
 import "./globals.css";
 
@@ -41,18 +42,23 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <GenerationProvider>
-            {/* Ambient background orbs */}
-            <div
-              className="ambient-orb ambient-orb-purple"
-              aria-hidden="true"
-            />
-            <div className="ambient-orb ambient-orb-mint" aria-hidden="true" />
+            <DeckProvider>
+              {/* Ambient background orbs */}
+              <div
+                className="ambient-orb ambient-orb-purple"
+                aria-hidden="true"
+              />
+              <div
+                className="ambient-orb ambient-orb-mint"
+                aria-hidden="true"
+              />
 
-            {/* Page content */}
-            <div className="relative z-10">{children}</div>
+              {/* Page content */}
+              <div className="relative z-10">{children}</div>
 
-            {/* Global floating chat bubble — hidden on mobile, hidden during generation */}
-            <ChatBubbleWrapper />
+              {/* Global floating chat bubble — hidden on mobile, hidden during generation */}
+              <ChatBubbleWrapper />
+            </DeckProvider>
           </GenerationProvider>
         </ThemeProvider>
       </body>
