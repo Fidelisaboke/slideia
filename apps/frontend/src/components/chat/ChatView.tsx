@@ -7,6 +7,7 @@ import { useChat } from "@/hooks/useChat";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
 import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/ui/Logo";
 import { FileAttachment } from "@/types/chat";
 import { Sparkles, ArrowDown } from "lucide-react";
 import { fadeInUp, staggerFast, scaleIn } from "@/lib/motion";
@@ -106,10 +107,8 @@ export default function ChatView({ compact = false, onClose }: ChatViewProps) {
         /* Compact header — no logo link or theme toggle */
         <header className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg gradient-button shadow-md">
-              <span className="text-white font-bold text-xs font-(family-name:--font-sora)">
-                S
-              </span>
+            <div className="w-7 h-7">
+              <Logo className="w-full h-full" />
             </div>
             <span className="text-sm font-semibold font-(family-name:--font-sora)">
               <span className="gradient-text">Slide</span>
@@ -158,13 +157,8 @@ export default function ChatView({ compact = false, onClose }: ChatViewProps) {
         /* Full-page header — logo link + theme toggle */
         <header className="flex items-center justify-between px-4 py-3 border-b border-border glass-panel rounded-b-xl">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div
-              className="flex items-center justify-center w-8 h-8 rounded-lg gradient-button shadow-md
-                            group-hover:-translate-y-0.5 transition-transform duration-300"
-            >
-              <span className="text-white font-bold text-sm font-(family-name:--font-sora)">
-                S
-              </span>
+            <div className="w-8 h-8 group-hover:-translate-y-0.5 transition-transform duration-300">
+              <Logo className="w-full h-full" />
             </div>
             <div>
               <h1 className="text-sm font-bold font-(family-name:--font-sora) tracking-tight">
