@@ -61,6 +61,9 @@ importers:
       "@tailwindcss/postcss":
         specifier: ^4
         version: 4.2.2
+      "@types/dom-speech-recognition":
+        specifier: ^0.0.11
+        version: 0.0.11
       "@types/node":
         specifier: ^25.5.2
         version: 25.5.2
@@ -802,6 +805,12 @@ packages:
     resolution:
       {
         integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==,
+      }
+
+  "@types/dom-speech-recognition@0.0.11":
+    resolution:
+      {
+        integrity: sha512-PyLFPLM9F5D+qEmkNLX/ZC3uiEV/2B/UhZA9uhWkFVOxUyDVj+UBKI2pF1dnhKhliOiIoR1d/QsOZQfOtQPE3A==,
       }
 
   "@types/estree-jsx@1.0.5":
@@ -4105,6 +4114,8 @@ snapshots:
   "@types/debug@4.1.13":
     dependencies:
       "@types/ms": 2.1.0
+
+  "@types/dom-speech-recognition@0.0.11": {}
 
   "@types/estree-jsx@1.0.5":
     dependencies:
