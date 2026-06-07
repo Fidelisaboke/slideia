@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type DragEvent,
@@ -9,7 +10,7 @@ import {
 } from "react";
 import { FileAttachment } from "@/types/chat";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Send, X, FileText } from "lucide-react";
+import { Paperclip, Send, X, FileText, Mic, MicOff } from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -43,6 +44,37 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ── Speech-to-Text helpers ────────────────────────────────────────────
+
+// Resolve vendor-prefixed SpeechRecognition across Chrome, Safari, Firefox
+function getSpeechRecognition(): (new () => SpeechRecognition) | null {
+  if (typeof window === "undefined") return null;
+  // @types/dom-speech-recognition declares these as top-level globals
+  if (typeof SpeechRecognition !== "undefined") return SpeechRecognition;
+  if (typeof webkitSpeechRecognition !== "undefined")
+    return webkitSpeechRecognition;
+  return null;
+}
+
+// Human-readable labels for Web Speech API error codes
+function sttErrorMessage(code: string): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access denied. Allow microphone access in your browser settings and try again.";
+    case "no-speech":
+      return "No speech detected. Please try again.";
+    case "audio-capture":
+      return "No microphone found. Please connect a microphone and try again.";
+    case "network":
+      return "A network error occurred while processing speech. Check your connection.";
+    case "aborted":
+      return null as unknown as string; // user-triggered stop, not an error
+    default:
+      return "Speech recognition failed. Please try again.";
+  }
+}
+
 // ── Component ────────────────────────────────────────────────────────
 
 export default function ChatInput({
@@ -54,8 +86,23 @@ export default function ChatInput({
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
 
+  // ── STT state ────────────────────────────────────────────────────
+  const [isListening, setIsListening] = useState(false);
+  const [sttError, setSttError] = useState<string | null>(null);
+  // Stable ref to the active recognition instance so we can abort() it
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // True when the browser supports Web Speech API
+  const [sttSupported] = useState<boolean>(
+    () => getSpeechRecognition() !== null,
+  );
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Abort recognition on unmount to avoid stale handlers
+  useEffect(() => {
+    return () => recognitionRef.current?.abort();
+  }, []);
 
   // ── Auto-resize textarea ─────────────────────────────────────────
   const handleInput = useCallback(() => {
@@ -161,6 +208,72 @@ export default function ChatInput({
     [handleSubmit],
   );
 
+  // ── STT toggle ───────────────────────────────────────────────────
+  const toggleListening = useCallback(() => {
+    setSttError(null);
+
+    if (isListening) {
+      // User manually stopped — abort current session
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognitionCtor = getSpeechRecognition();
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = navigator.language || "en-US";
+    // Keep interim results so the user sees live feedback in the textarea
+    recognition.interimResults = true;
+    // Single utterance — the session ends after the first natural pause
+    recognition.continuous = false;
+
+    // Track what was in the box before we started so we can safely append
+    const baseText = input;
+    let finalTranscript = "";
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const { transcript } = event.results[i][0];
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      // Show live interim text; replace with finalized on "final" events
+      const display = finalTranscript || interim;
+      const separator = baseText && display ? " " : "";
+      setInput(baseText + separator + display);
+
+      // Auto-resize textarea to fit new content
+      const el = textareaRef.current;
+      if (el) {
+        el.style.height = "auto";
+        el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+      }
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      const msg = sttErrorMessage(event.error);
+      if (msg) setSttError(msg);
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening, input]);
+
   const canSend = input.trim().length > 0 && !disabled;
 
   return (
@@ -229,6 +342,44 @@ export default function ChatInput({
           <Paperclip className="w-4 h-4" />
         </Button>
 
+        {/* Microphone button — hidden when browser lacks Web Speech API */}
+        {sttSupported && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={`
+              relative shrink-0 h-9 w-9 rounded-xl transition-all duration-200
+              ${
+                isListening
+                  ? "text-primary hover:text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }
+            `}
+            onClick={toggleListening}
+            disabled={disabled}
+            aria-label={isListening ? "Stop recording" : "Start voice input"}
+            aria-pressed={isListening}
+          >
+            {/* Pulsing ring — visible only while listening */}
+            {isListening && (
+              <span
+                className="absolute inset-0 rounded-xl animate-ping"
+                style={{
+                  background:
+                    "radial-gradient(circle, hsl(var(--primary)/0.25) 0%, transparent 70%)",
+                }}
+                aria-hidden
+              />
+            )}
+            {isListening ? (
+              <MicOff className="relative w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </Button>
+        )}
+
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -279,9 +430,21 @@ export default function ChatInput({
         </Button>
       </div>
 
+      {/* STT permission / hardware error — inline, below the input box */}
+      {sttError && (
+        <p
+          role="alert"
+          className="flex items-center gap-1.5 text-xs text-destructive mt-1.5 px-1"
+        >
+          <MicOff className="w-3 h-3 shrink-0" aria-hidden />
+          {sttError}
+        </p>
+      )}
+
       {/* Hint */}
       <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5">
-        Enter to send · Shift+Enter for new line · Drag & drop files
+        Enter to send · Shift+Enter for new line
+        {sttSupported ? " · Click 🎤 to speak" : " · Drag & drop files"}
       </p>
     </div>
   );
