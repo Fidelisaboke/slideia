@@ -10,7 +10,15 @@ import {
 } from "react";
 import { FileAttachment } from "@/types/chat";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Send, X, FileText, Mic, MicOff } from "lucide-react";
+import {
+  Paperclip,
+  Send,
+  X,
+  FileText,
+  Mic,
+  MicOff,
+  Square,
+} from "lucide-react";
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -373,7 +381,7 @@ export default function ChatInput({
               />
             )}
             {isListening ? (
-              <MicOff className="relative w-4 h-4" />
+              <Square className="relative w-4 h-4 fill-current" />
             ) : (
               <Mic className="w-4 h-4" />
             )}
