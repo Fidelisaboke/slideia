@@ -1,0 +1,51 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # Frontend (Next.js + pnpm workspace app)
+  - package-ecosystem: "npm"
+    directory: "/apps/frontend"
+    schedule:
+      interval: "weekly"
+
+    rebase-strategy: "auto"
+
+    groups:
+      frontend:
+        patterns:
+          - "*"
+
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  # Backend (uv / pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/apps/backend"
+    schedule:
+      interval: "weekly"
+
+    rebase-strategy: "auto"
+
+    groups:
+      backend:
+        patterns:
+          - "*"
+
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+    rebase-strategy: "auto"
+
+    labels:
+      - "dependencies"
+      - "ci"
