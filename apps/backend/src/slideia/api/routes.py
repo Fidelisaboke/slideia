@@ -236,6 +236,7 @@ async def export_pptx(request: FullDeckExportRequest):
             "subtitle": f"For {request.audience}",
             "palette": request.palette or [],
             "font": request.font or "Calibri",
+            "citations": request.citations or [],
             "slides": [],
         }
 
@@ -324,6 +325,7 @@ async def export_pdf(request: FullDeckExportRequest):
             "subtitle": f"For {request.audience}",
             "palette": request.palette or [],
             "font": request.font or "Calibri",
+            "citations": request.citations or [],
             "slides": [],
         }
 

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-06-14
+
+### Added
+
+- **Citations & References**: Implemented citation extraction and automatically added a "References" slide for both PPTX and PDF exports.
+- **Speech-to-Text**: Integrated speech-to-text functionality via Web Speech API in the chat input, including improved active listening UX.
+- **LangGraph Agent**: Implemented LangGraph agent for slide generation and synchronized it with the frontend.
+- **Copy to Clipboard**: Added copy-to-clipboard functionality to chat messages.
+- **Floating Chat Bubble**: Replaced the static chat page with a global floating chat bubble interface.
+- **Brand Logo SVG**: Introduced a new scalable SVG brand logo component, replacing all raster logos across the application.
+
+### Changed
+
+- **Settings Optimization**: Wrapped backend settings initialization in `lru_cache` for optimized access.
+
+### Maintenance
+
+- **Dependabot**: Added `dependabot.yml` and `requirements.txt` to streamline dependency updates.
+- **GitHub Actions**: Bumped various GitHub Actions versions (checkout, setup-node, setup-python, codecov, pnpm).
+
+## [0.7.1] - 2026-05-xx
+
+- Hotfix release (merged from 0.7.0).
+- Removed miscellaneous `.json` files from version control.
+
 ## [0.7.0] - 2026-05-07
 
 ### Added

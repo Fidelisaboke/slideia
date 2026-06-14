@@ -58,3 +58,4 @@ class FullDeckExportRequest(BaseModel):
     slides: list[SlideExportItem]
     palette: list[str] | None = None
     font: str | None = None
+    citations: list[str] | None = None

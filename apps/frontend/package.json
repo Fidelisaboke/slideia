@@ -1,6 +1,6 @@
 {
   "name": "@slideia/frontend",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4",
+    "@types/dom-speech-recognition": "^0.0.11",
     "@types/node": "^25.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

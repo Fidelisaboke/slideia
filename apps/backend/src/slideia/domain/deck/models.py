@@ -16,12 +16,14 @@ class Deck:
     slides: list[Slide]
     palette: list[str] | None = None
     font: str | None = None
+    citations: list[str] | None = None
 
     def to_dict(self) -> dict:
         return {
             "outline": self.outline,
             "palette": self.palette,
             "font": self.font,
+            "citations": self.citations,
             "slides": [
                 {
                     "title": slide.title,
