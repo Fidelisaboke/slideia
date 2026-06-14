@@ -66,9 +66,11 @@ OUTPUT FORMAT (valid JSON only):
       "title": "Slide Title",
       "bullets": ["Bullet 1", "Bullet 2"],
       "notes": "Speaker notes for presentation",
-      "image_prompt": "Image prompt describing a slide graphic"
+      "image_prompt": "Image prompt describing a slide graphic",
+      "citations": ["Source 1"]
     }}
-  ]
+  ],
+  "citations": ["Source 1", "Source 2"]
 }}
 
 Return ONLY valid JSON. Do not wrap in markdown code blocks.
@@ -158,6 +160,7 @@ async def propose_outline_node(state: AgentState, config: RunnableConfig) -> dic
                 "outline": outline,
                 "palette": outline.get("palette"),
                 "font": outline.get("font"),
+                "citations": outline.get("citations", []),
                 "slides": [],
             },
             "topic": topic,
@@ -274,6 +277,7 @@ async def refine_deck_node(state: AgentState, config: RunnableConfig) -> dict:
             "outline": deck.get("outline", {}),
             "palette": updated_deck.get("palette") or deck.get("palette"),
             "font": updated_deck.get("font") or deck.get("font"),
+            "citations": updated_deck.get("citations") or deck.get("citations", []),
             "slides": updated_deck.get("slides", []),
         }
 

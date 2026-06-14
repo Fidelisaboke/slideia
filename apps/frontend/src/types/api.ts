@@ -57,6 +57,7 @@ export interface ProposeOutlineResponse {
   }>;
   palette?: string[];
   font?: string;
+  citations?: string[];
 }
 
 export interface GenerateDeckRequest {
@@ -118,6 +119,7 @@ export interface FullDeckExportRequest {
   slides: SlideExportItem[];
   palette?: string[];
   font?: string;
+  citations?: string[];
 }
 
 // ── Errors ───────────────────────────────────────────────────────────
