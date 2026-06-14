@@ -12,7 +12,7 @@ INSTRUCTIONS:
 3. Each slide should have a clear, concise title (max 6 words)
 4. Each slide should have a brief summary (1-2 sentences describing the slide's purpose)
 5. Ensure logical flow between slides
-6. Include citations only if relevant facts/data are referenced
+6. Include citations only if relevant facts/data are referenced. Provide both per-slide citations and a consolidated list of all references.
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -23,7 +23,8 @@ OUTPUT FORMAT (valid JSON only):
   "slides": [
     {{
       "title": "Slide Title",
-      "summary": "Brief 1-2 sentence description of what this slide covers"
+      "summary": "Brief 1-2 sentence description of what this slide covers",
+      "citations": ["Source 1"]
     }}
   ],
   "citations": ["Source 1", "Source 2"]

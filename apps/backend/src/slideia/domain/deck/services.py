@@ -53,6 +53,9 @@ async def generate_full_deck(
         return Deck(
             outline=cached.get("outline", {}),
             slides=[Slide(**s) for s in cached.get("slides", [])],
+            palette=cached.get("palette"),
+            font=cached.get("font"),
+            citations=cached.get("citations"),
         )
 
     logger.info("Generating new deck...")
@@ -91,6 +94,9 @@ async def generate_full_deck(
     result = {
         "outline": outline_data,
         "slides": slides_content,
+        "palette": outline_data.get("palette"),
+        "font": outline_data.get("font"),
+        "citations": outline_data.get("citations"),
     }
 
     cache.set(topic, audience, tone, slide_count, result)
@@ -101,6 +107,7 @@ async def generate_full_deck(
         slides=[Slide(**s) for s in slides_content],
         palette=outline_data.get("palette"),
         font=outline_data.get("font"),
+        citations=outline_data.get("citations"),
     )
 
 
@@ -183,6 +190,7 @@ async def generate_full_deck_stream(
         "slides": slides_content,
         "palette": outline_data.get("palette"),
         "font": outline_data.get("font"),
+        "citations": outline_data.get("citations"),
     }
 
     cache.set(topic, audience, tone, slide_count, result)

@@ -79,6 +79,13 @@ async def export_deck_to_pdf(input_path: str, output_path: str):
         await _draw_content_slide(c, s, slide_index, width, height, theme)
         c.showPage()
 
+    # 3. References Slide
+    citations = data.get("citations")
+    if isinstance(citations, list) and len(citations) > 0:
+        logger.info("Adding References slide to PDF")
+        _draw_references_slide(c, citations, width, height, theme)
+        c.showPage()
+
     c.save()
     logger.info(f"Exported PDF to {output_path}")
 
@@ -229,3 +236,46 @@ def reportlab_image_from_stream(stream):
     from reportlab.lib.utils import ImageReader
 
     return ImageReader(stream)
+
+
+def _draw_references_slide(c, citations, width, height, theme: dict):
+    """Draws the references page."""
+    # Background
+    c.setFillColor(theme["background"])
+    c.rect(0, 0, width, height, fill=1, stroke=0)
+
+    # Title
+    c.setFont("Helvetica-Bold", 32)
+    c.setFillColor(theme["primary"])
+    c.drawString(0.5 * inch, height - 0.8 * inch, "References")
+
+    # Divider line
+    c.setStrokeColor(theme["secondary"])
+    c.setLineWidth(2)
+    c.line(0.5 * inch, height - 1.0 * inch, width - 0.5 * inch, height - 1.0 * inch)
+
+    # Styles
+    styles = getSampleStyleSheet()
+    ref_style = ParagraphStyle(
+        "ReferenceItem",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=14,
+        textColor=theme["text"],
+        leading=18,
+        spaceAfter=12,
+    )
+
+    current_y = height - 1.5 * inch
+    content_width = width - 1.0 * inch
+
+    for i, ref in enumerate(citations):
+        if not isinstance(ref, str):
+            ref = str(ref)
+        ref_text = f"[{i + 1}] {ref.strip()}"
+        p = Paragraph(ref_text, ref_style)
+        w, h = p.wrap(content_width, height)
+        if current_y - h < 0.5 * inch:
+            break
+        p.drawOn(c, 0.5 * inch, current_y - h)
+        current_y -= h + 12

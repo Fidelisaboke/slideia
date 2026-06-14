@@ -297,5 +297,73 @@ async def export_slides(input_path: str, output_path: str):
             p.font.italic = True
             p.alignment = PP_ALIGN.CENTER
 
+    # Add References slide if citations exist
+    citations = data.get("citations")
+    if isinstance(citations, list) and len(citations) > 0:
+        logger.info("Adding References slide to PPTX")
+        ref_slide = prs.slides.add_slide(blank_layout)
+
+        global_font = data.get("font", "Calibri")
+        global_palette = data.get("palette", [])
+        font_name = global_font or "Calibri"
+
+        font_color = None
+        if global_palette:
+            color_hex = global_palette[0]
+            try:
+                rgb = color_hex.lstrip("#")
+                if len(rgb) == 6:
+                    font_color = RGBColor(int(rgb[0:2], 16), int(rgb[2:4], 16), int(rgb[4:6], 16))
+            except Exception as e:
+                logger.warning(f"Color parsing failed for '{color_hex}': {e}")
+
+        # Title box
+        title_left = Inches(0.5)
+        title_top = Inches(0.5)
+        title_width = Inches(9)
+        title_height = Inches(0.8)
+
+        title_box = ref_slide.shapes.add_textbox(title_left, title_top, title_width, title_height)
+        title_frame = title_box.text_frame
+        title_frame.text = "References"
+        title_frame.word_wrap = True
+
+        title_para = title_frame.paragraphs[0]
+        title_para.font.size = Pt(32)
+        title_para.font.bold = True
+        title_para.font.name = font_name
+        if font_color:
+            title_para.font.color.rgb = font_color
+        title_para.alignment = PP_ALIGN.LEFT
+
+        # Content box
+        content_left = Inches(0.5)
+        content_top = Inches(1.5)
+        content_width = Inches(9)
+        content_height = Inches(5)
+
+        content_box = ref_slide.shapes.add_textbox(content_left, content_top, content_width, content_height)
+        text_frame = content_box.text_frame
+        text_frame.word_wrap = True
+
+        for i, ref in enumerate(citations):
+            if not isinstance(ref, str):
+                ref = str(ref)
+            ref_text = f"[{i + 1}] {ref.strip()}"
+            if i == 0:
+                p = text_frame.paragraphs[0]
+                p.text = ref_text
+            else:
+                p = text_frame.add_paragraph()
+                p.text = ref_text
+
+            p.level = 0
+            p.font.size = Pt(14)
+            p.font.name = font_name
+            if font_color:
+                p.font.color.rgb = font_color
+            p.space_after = Pt(12)
+            p.alignment = PP_ALIGN.LEFT
+
     prs.save(output_path)
     logger.info(f"Exported slides to {output_path}")
