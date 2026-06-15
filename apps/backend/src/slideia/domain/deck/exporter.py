@@ -306,6 +306,101 @@ async def export_slides(input_path: str, output_path: str):
                     p_ctx.font.color.rgb = font_color
                 p_ctx.alignment = PP_ALIGN.CENTER
 
+        elif layout == "two_column":
+            col_left_title = (s.get("column_left_title") or "").strip()
+            col_left = s.get("column_left") or []
+            col_right_title = (s.get("column_right_title") or "").strip()
+            col_right = s.get("column_right") or []
+
+            col_w = Inches(4.2)
+            col_h = Inches(4.2)
+            col_top = Inches(1.9)
+
+            for col_x, col_title, col_items in [
+                (Inches(0.5), col_left_title, col_left),
+                (Inches(5.0), col_right_title, col_right),
+            ]:
+                col_box = content_slide.shapes.add_textbox(col_x, col_top, col_w, col_h)
+                tf = col_box.text_frame
+                tf.word_wrap = True
+
+                if col_title:
+                    p_title = tf.paragraphs[0]
+                    p_title.text = col_title.upper()
+                    p_title.font.size = Pt(13)
+                    p_title.font.bold = True
+                    p_title.font.name = font_name
+                    if font_color:
+                        p_title.font.color.rgb = font_color
+                    p_title.alignment = PP_ALIGN.LEFT
+                    p_title.space_after = Pt(6)
+
+                for i, item in enumerate(col_items):
+                    if not isinstance(item, str):
+                        item = str(item)
+                    p = tf.add_paragraph() if (col_title or i > 0) else tf.paragraphs[0]
+                    clean = item.strip()
+                    p.text = f"\u25aa {clean}" if not clean.startswith(("\u25aa", "\u2022", "-")) else clean
+                    p.font.size = Pt(15)
+                    p.font.name = font_name
+                    if font_color:
+                        p.font.color.rgb = font_color
+                    p.alignment = PP_ALIGN.LEFT
+                    p.space_after = Pt(5)
+
+        elif layout == "steps":
+            steps = s.get("steps") or []
+            steps_box = content_slide.shapes.add_textbox(Inches(1.2), Inches(2.0), Inches(7.6), Inches(4.0))
+            tf = steps_box.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+            for i, step in enumerate(steps):
+                if not isinstance(step, str):
+                    step = str(step)
+                p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+                p.text = f"{i + 1}.  {step.strip()}"
+                p.font.size = Pt(19)
+                p.font.bold = i == 0
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.alignment = PP_ALIGN.LEFT
+                p.space_after = Pt(10)
+
+        elif layout == "quote":
+            quote_text = (s.get("quote_text") or "").strip()
+            quote_attribution = (s.get("quote_attribution") or "").strip()
+            if not quote_text:
+                quote_text = summary
+
+            quote_box = content_slide.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(8.0), Inches(3.5))
+            tf = quote_box.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+            if quote_text:
+                p_q = tf.paragraphs[0]
+                p_q.text = f"\u201c{quote_text}\u201d"
+                p_q.font.size = Pt(28)
+                p_q.font.italic = True
+                p_q.font.name = font_name
+                if font_color:
+                    p_q.font.color.rgb = font_color
+                p_q.alignment = PP_ALIGN.CENTER
+                p_q.space_after = Pt(14)
+
+            if quote_attribution:
+                p_attr = tf.add_paragraph() if quote_text else tf.paragraphs[0]
+                p_attr.text = quote_attribution
+                p_attr.font.size = Pt(14)
+                p_attr.font.italic = False
+                p_attr.font.bold = False
+                p_attr.font.name = font_name
+                if font_color:
+                    p_attr.font.color.rgb = font_color
+                p_attr.alignment = PP_ALIGN.CENTER
+
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
         if not isinstance(notes, str):

@@ -31,9 +31,18 @@ interface EditableSlideData {
   image_prompt: string;
   theme?: Record<string, string>;
   layout?: SlideLayout;
+  // Phase 1
   statement?: string;
   big_number?: string;
   big_number_context?: string;
+  // Phase 2
+  column_left_title?: string;
+  column_left?: string[];
+  column_right_title?: string;
+  column_right?: string[];
+  steps?: string[];
+  quote_text?: string;
+  quote_attribution?: string;
 }
 
 interface DeckViewProps {
@@ -63,6 +72,13 @@ function buildEditableSlides(deck: GenerateDeckResponse): EditableSlideData[] {
     statement: slide.statement,
     big_number: slide.big_number,
     big_number_context: slide.big_number_context,
+    column_left_title: slide.column_left_title,
+    column_left: slide.column_left,
+    column_right_title: slide.column_right_title,
+    column_right: slide.column_right,
+    steps: slide.steps,
+    quote_text: slide.quote_text,
+    quote_attribution: slide.quote_attribution,
   }));
 }
 
@@ -127,6 +143,16 @@ export default function DeckView({
           big_number: updated.big_number ?? newSlides[index].big_number,
           big_number_context:
             updated.big_number_context ?? newSlides[index].big_number_context,
+          column_left_title:
+            updated.column_left_title ?? newSlides[index].column_left_title,
+          column_left: updated.column_left ?? newSlides[index].column_left,
+          column_right_title:
+            updated.column_right_title ?? newSlides[index].column_right_title,
+          column_right: updated.column_right ?? newSlides[index].column_right,
+          steps: updated.steps ?? newSlides[index].steps,
+          quote_text: updated.quote_text ?? newSlides[index].quote_text,
+          quote_attribution:
+            updated.quote_attribution ?? newSlides[index].quote_attribution,
         };
       }
 
@@ -172,6 +198,16 @@ export default function DeckView({
             big_number: result.big_number ?? newSlides[index].big_number,
             big_number_context:
               result.big_number_context ?? newSlides[index].big_number_context,
+            column_left_title:
+              result.column_left_title ?? newSlides[index].column_left_title,
+            column_left: result.column_left ?? newSlides[index].column_left,
+            column_right_title:
+              result.column_right_title ?? newSlides[index].column_right_title,
+            column_right: result.column_right ?? newSlides[index].column_right,
+            steps: result.steps ?? newSlides[index].steps,
+            quote_text: result.quote_text ?? newSlides[index].quote_text,
+            quote_attribution:
+              result.quote_attribution ?? newSlides[index].quote_attribution,
           };
         }
 
@@ -210,6 +246,13 @@ export default function DeckView({
           statement: s.statement,
           big_number: s.big_number,
           big_number_context: s.big_number_context,
+          column_left_title: s.column_left_title,
+          column_left: s.column_left,
+          column_right_title: s.column_right_title,
+          column_right: s.column_right,
+          steps: s.steps,
+          quote_text: s.quote_text,
+          quote_attribution: s.quote_attribution,
         }));
 
         const response =

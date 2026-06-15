@@ -53,6 +53,13 @@ class SlideExportItem(BaseModel):
     statement: str | None = None
     big_number: str | None = None
     big_number_context: str | None = None
+    column_left_title: str | None = None
+    column_left: list[str] | None = None
+    column_right_title: str | None = None
+    column_right: list[str] | None = None
+    steps: list[str] | None = None
+    quote_text: str | None = None
+    quote_attribution: str | None = None
 
 
 class FullDeckExportRequest(BaseModel):

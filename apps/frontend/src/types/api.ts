@@ -69,7 +69,13 @@ export interface GenerateDeckRequest {
   theme_preset?: ThemePreset;
 }
 
-export type SlideLayout = "bullets" | "statement" | "big_number";
+export type SlideLayout =
+  | "bullets"
+  | "statement"
+  | "big_number"
+  | "two_column"
+  | "steps"
+  | "quote";
 
 export interface SlideContent {
   bullets: string[];
@@ -80,6 +86,13 @@ export interface SlideContent {
   statement?: string;
   big_number?: string;
   big_number_context?: string;
+  column_left_title?: string;
+  column_left?: string[];
+  column_right_title?: string;
+  column_right?: string[];
+  steps?: string[];
+  quote_text?: string;
+  quote_attribution?: string;
 }
 
 export interface GenerateDeckResponse {
@@ -123,6 +136,13 @@ export interface SlideExportItem {
   statement?: string;
   big_number?: string;
   big_number_context?: string;
+  column_left_title?: string;
+  column_left?: string[];
+  column_right_title?: string;
+  column_right?: string[];
+  steps?: string[];
+  quote_text?: string;
+  quote_attribution?: string;
 }
 
 export interface FullDeckExportRequest {

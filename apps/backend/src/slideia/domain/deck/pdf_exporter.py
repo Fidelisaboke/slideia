@@ -11,7 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from slideia.core.logging import get_logger
@@ -292,6 +292,128 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         if p_ctx:
             y_ctx = y_num - 14 - h_ctx
             p_ctx.drawOn(c, content_x, y_ctx)
+
+    elif layout == "two_column":
+        col_left_title = (s.get("column_left_title") or "").strip()
+        col_left = s.get("column_left") or []
+        col_right_title = (s.get("column_right_title") or "").strip()
+        col_right = s.get("column_right") or []
+
+        col_w = (width - 1.5 * inch) / 2.0
+        col_title_style = ParagraphStyle(
+            "ColTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            textColor=theme["primary"],
+            leading=16,
+            spaceAfter=6,
+            alignment=TA_LEFT,
+        )
+        col_item_style = ParagraphStyle(
+            "ColItem",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=14,
+            textColor=theme["text"],
+            leading=18,
+            spaceAfter=5,
+            alignment=TA_LEFT,
+        )
+
+        for col_idx, (col_title, col_items) in enumerate(
+            [(col_left_title, col_left), (col_right_title, col_right)]
+        ):
+            col_x = 0.5 * inch + col_idx * (col_w + 0.5 * inch)
+            y = current_y
+
+            if col_title:
+                p = Paragraph(col_title.upper(), col_title_style)
+                w, h = p.wrap(col_w, height)
+                p.drawOn(c, col_x, y - h)
+                y -= h + 8
+
+            for item in col_items:
+                if not isinstance(item, str):
+                    item = str(item)
+                clean = item.strip()
+                text = f"\u25aa {clean}" if not clean.startswith(("\u25aa", "\u2022", "-")) else clean
+                p = Paragraph(text, col_item_style)
+                w, h = p.wrap(col_w, height)
+                if y - h < 0.5 * inch:
+                    break
+                p.drawOn(c, col_x, y - h)
+                y -= h + 5
+
+    elif layout == "steps":
+        steps = s.get("steps") or []
+        step_style = ParagraphStyle(
+            "Step",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=18,
+            textColor=theme["text"],
+            leading=24,
+            spaceAfter=10,
+            alignment=TA_LEFT,
+        )
+        step_paragraphs = []
+        total_h = 0
+        for i, step in enumerate(steps):
+            if not isinstance(step, str):
+                step = str(step)
+            text = f"{i + 1}.  {step.strip()}"
+            p = Paragraph(text, step_style)
+            w, h = p.wrap(content_width, height)
+            step_paragraphs.append((p, h))
+            total_h += h + 10
+
+        y = (height - 1.0 * inch) / 2.0 + total_h / 2.0
+        for p, h in step_paragraphs:
+            if y - h < 0.5 * inch:
+                break
+            p.drawOn(c, content_x, y - h)
+            y -= h + 10
+
+    elif layout == "quote":
+        quote_text = (s.get("quote_text") or "").strip()
+        quote_attribution = (s.get("quote_attribution") or "").strip()
+        if not quote_text:
+            quote_text = s.get("summary", "")
+
+        quote_style = ParagraphStyle(
+            "QuoteText",
+            parent=styles["Normal"],
+            fontName="Helvetica-Oblique",
+            fontSize=26,
+            textColor=theme["text"],
+            leading=34,
+            spaceAfter=14,
+            alignment=TA_CENTER,
+        )
+        attr_style = ParagraphStyle(
+            "QuoteAttr",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=14,
+            textColor=theme["secondary"],
+            leading=18,
+            spaceAfter=0,
+            alignment=TA_CENTER,
+        )
+
+        p_q = Paragraph(f"\u201c{quote_text}\u201d", quote_style) if quote_text else None
+        p_attr = Paragraph(quote_attribution, attr_style) if quote_attribution else None
+
+        _, h_q = p_q.wrap(content_width, height) if p_q else (0, 0)
+        _, h_a = p_attr.wrap(content_width, height) if p_attr else (0, 0)
+        total_h = h_q + (14 if p_q and p_attr else 0) + h_a
+
+        y_q = (height - 1.0 * inch) / 2.0 + total_h / 2.0
+        if p_q:
+            p_q.drawOn(c, content_x, y_q - h_q)
+        if p_attr:
+            p_attr.drawOn(c, content_x, y_q - h_q - 14 - h_a)
 
     # Image Handling — placed in upper-right quadrant below the header
     if has_image:
