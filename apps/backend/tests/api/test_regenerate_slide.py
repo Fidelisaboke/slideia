@@ -37,7 +37,10 @@ def test_regenerate_slide_success(client):
         data = response.json()
         assert data == mock_result
         mock_llm.assert_called_once_with(
-            title="Old Title", summary="Old Summary", instruction="Make it more professional"
+            title="Old Title",
+            summary="Old Summary",
+            instruction="Make it more professional",
+            layout="bullets",
         )
 
 

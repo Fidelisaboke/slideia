@@ -15,6 +15,7 @@ import {
   SlideExportItem,
   ThemePreset,
   THEME_PRESETS,
+  SlideLayout,
 } from "@/types/api";
 import { apiClient } from "@/lib/apiClient";
 import EditableSlide from "@/components/EditableSlide";
@@ -29,6 +30,10 @@ interface EditableSlideData {
   notes: string;
   image_prompt: string;
   theme?: Record<string, string>;
+  layout?: SlideLayout;
+  statement?: string;
+  big_number?: string;
+  big_number_context?: string;
 }
 
 interface DeckViewProps {
@@ -54,6 +59,10 @@ function buildEditableSlides(deck: GenerateDeckResponse): EditableSlideData[] {
     notes: slide.notes ?? "",
     image_prompt: slide.image_prompt ?? "",
     theme: slide.theme,
+    layout: slide.layout ?? deck.outline.slides[i]?.layout ?? "bullets",
+    statement: slide.statement,
+    big_number: slide.big_number,
+    big_number_context: slide.big_number_context,
   }));
 }
 
@@ -101,6 +110,7 @@ export default function DeckView({
           ...newOutlineSlides[index],
           title: updated.title ?? newOutlineSlides[index].title,
           summary: updated.summary ?? newOutlineSlides[index].summary,
+          layout: updated.layout ?? newOutlineSlides[index].layout,
         };
       }
 
@@ -112,6 +122,11 @@ export default function DeckView({
           notes: updated.notes ?? newSlides[index].notes,
           image_prompt: updated.image_prompt ?? newSlides[index].image_prompt,
           theme: updated.theme ?? newSlides[index].theme,
+          layout: updated.layout ?? newSlides[index].layout,
+          statement: updated.statement ?? newSlides[index].statement,
+          big_number: updated.big_number ?? newSlides[index].big_number,
+          big_number_context:
+            updated.big_number_context ?? newSlides[index].big_number_context,
         };
       }
 
@@ -140,6 +155,7 @@ export default function DeckView({
           title: slide.title,
           summary: slide.summary,
           instruction,
+          layout: slide.layout,
         });
 
         if (!currentDeck) return;
@@ -151,6 +167,11 @@ export default function DeckView({
             bullets: result.bullets,
             notes: result.notes ?? newSlides[index].notes,
             image_prompt: result.image_prompt ?? newSlides[index].image_prompt,
+            layout: result.layout ?? newSlides[index].layout,
+            statement: result.statement ?? newSlides[index].statement,
+            big_number: result.big_number ?? newSlides[index].big_number,
+            big_number_context:
+              result.big_number_context ?? newSlides[index].big_number_context,
           };
         }
 
@@ -185,6 +206,10 @@ export default function DeckView({
           notes: s.notes,
           image_prompt: s.image_prompt,
           theme: s.theme,
+          layout: s.layout,
+          statement: s.statement,
+          big_number: s.big_number,
+          big_number_context: s.big_number_context,
         }));
 
         const response =

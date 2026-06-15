@@ -150,6 +150,11 @@ async def export_slides(input_path: str, output_path: str):
         text_frame.margin_top = Inches(0.1)
         text_frame.margin_bottom = Inches(0.1)
 
+        # Get slide layout (default to "bullets" for backward compatibility)
+        layout = s.get("layout", "bullets")
+        if not layout:
+            layout = "bullets"
+
         # Get summary - SAFE EXTRACTION
         summary = s.get("summary", "")
         if not isinstance(summary, str):
@@ -157,68 +162,130 @@ async def export_slides(input_path: str, output_path: str):
             summary = str(summary) if summary else ""
         summary = summary.strip()
 
-        # Add summary if present
-        if summary:
-            summary_lines = summary.split("\n")
-            for i, line in enumerate(summary_lines):
-                if i == 0:
+        if layout == "bullets":
+            has_summary_text = False
+            # Add summary if present
+            if summary:
+                summary_lines = summary.split("\n")
+                for i, line in enumerate(summary_lines):
+                    if i == 0:
+                        p = text_frame.paragraphs[0]
+                        p.text = line.strip()
+                    else:
+                        p = text_frame.add_paragraph()
+                        p.text = line.strip()
+
+                p.level = 0
+                p.font.size = Pt(14)
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
+                p.alignment = PP_ALIGN.LEFT
+                has_summary_text = True
+
+            # Get bullets - SAFE EXTRACTION
+            bullets = s.get("bullets", [])
+            if not isinstance(bullets, list):
+                logger.warning(
+                    f"Warning: bullets is {type(bullets)}, expected list. Converting.",
+                )
+                if isinstance(bullets, str):
+                    bullets = [b.strip() for b in bullets.splitlines() if b.strip()]
+                else:
+                    bullets = []
+
+            # Add bullets
+            for i, bullet_item in enumerate(bullets):
+                # Ensure bullet is a string
+                if not isinstance(bullet_item, str):
+                    logger.warning(f"Warning: bullet {i} is {type(bullet_item)}, converting to str")
+                    bullet_text = str(bullet_item)
+                else:
+                    bullet_text = bullet_item
+
+                # Create new paragraph for each bullet
+                if i == 0 and not has_summary_text:
                     p = text_frame.paragraphs[0]
-                    p.text = line.strip()
                 else:
                     p = text_frame.add_paragraph()
-                    p.text = line.strip()
 
-            p.level = 0
-            p.font.size = Pt(14)
-            p.font.name = font_name
-            if font_color:
-                p.font.color.rgb = font_color
-            p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
-            p.alignment = PP_ALIGN.LEFT
+                # Add bullet text
+                clean_text = bullet_text.strip()
+                if not clean_text.startswith("•") and not clean_text.startswith("-"):
+                    p.text = f"• {clean_text}"
+                else:
+                    p.text = clean_text
 
-        # Get bullets - SAFE EXTRACTION
-        bullets = s.get("bullets", [])
-        if not isinstance(bullets, list):
-            logger.warning(
-                f"Warning: bullets is {type(bullets)}, expected list. Converting.",
-            )
-            if isinstance(bullets, str):
-                # If it's a string, split by newlines or use as single item
-                bullets = [b.strip() for b in bullets.splitlines() if b.strip()]
-            else:
-                bullets = []
+                # Style bullet paragraph
+                p.level = 0
+                p.font.size = Pt(16)
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.space_after = Pt(8)
+                p.alignment = PP_ALIGN.LEFT
+                p.font.bold = False
 
-        # Add bullets
-        for i, bullet_item in enumerate(bullets):
-            # Ensure bullet is a string
-            if not isinstance(bullet_item, str):
-                logger.warning(f"Warning: bullet {i} is {type(bullet_item)}, converting to str")
-                bullet_text = str(bullet_item)
-            else:
-                bullet_text = bullet_item
+        elif layout == "statement":
+            statement = s.get("statement", "")
+            if not isinstance(statement, str):
+                statement = str(statement) if statement else ""
+            statement = statement.strip()
 
-            # Create new paragraph for each bullet
-            if i == 0 and not summary:
+            if not statement:
+                statement = summary
+
+            if statement:
                 p = text_frame.paragraphs[0]
-            else:
-                p = text_frame.add_paragraph()
+                p.text = f"“{statement}”"
+                p.level = 0
+                p.font.size = Pt(24)
+                p.font.italic = True
+                p.font.bold = True
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.space_before = Pt(36)
+                p.alignment = PP_ALIGN.LEFT
 
-            # Add bullet text
-            clean_text = bullet_text.strip()
-            if not clean_text.startswith("•") and not clean_text.startswith("-"):
-                p.text = f"• {clean_text}"
-            else:
-                p.text = clean_text
+        elif layout == "big_number":
+            big_number = s.get("big_number", "")
+            if not isinstance(big_number, str):
+                big_number = str(big_number) if big_number else ""
+            big_number = big_number.strip()
 
-            # Style bullet paragraph
-            p.level = 0
-            p.font.size = Pt(16)
-            p.font.name = font_name
+            big_number_context = s.get("big_number_context", "")
+            if not isinstance(big_number_context, str):
+                big_number_context = str(big_number_context) if big_number_context else ""
+            big_number_context = big_number_context.strip()
+
+            if not big_number:
+                big_number = "50%"
+                big_number_context = summary or "No context provided"
+
+            p_num = text_frame.paragraphs[0]
+            p_num.text = big_number
+            p_num.level = 0
+            p_num.font.size = Pt(72)
+            p_num.font.bold = True
+            p_num.font.name = font_name
             if font_color:
-                p.font.color.rgb = font_color
-            p.space_after = Pt(8)
-            p.alignment = PP_ALIGN.LEFT
-            p.font.bold = False
+                p_num.font.color.rgb = font_color
+            p_num.alignment = PP_ALIGN.LEFT
+            p_num.space_after = Pt(14)
+            p_num.space_before = Pt(18)
+
+            if big_number_context:
+                p_ctx = text_frame.add_paragraph()
+                p_ctx.text = big_number_context
+                p_ctx.level = 0
+                p_ctx.font.size = Pt(16)
+                p_ctx.font.bold = False
+                p_ctx.font.name = font_name
+                if font_color:
+                    p_ctx.font.color.rgb = font_color
+                p_ctx.alignment = PP_ALIGN.LEFT
 
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")

@@ -143,3 +143,50 @@ async def test_export_slides_empty_slides(temp_output_file, clean_templates):
     assert len(prs.slides) == 1
     assert prs.slides[0].shapes.title.text == "Empty"
     os.remove(path)
+
+
+@pytest.mark.asyncio
+async def test_export_slides_layouts(temp_output_file, clean_templates):
+    layout_deck = {
+        "title": "Layout Test Deck",
+        "slides": [
+            {
+                "title": "Bullets Slide",
+                "summary": "Summary bullets",
+                "bullets": ["Point 1", "Point 2"],
+                "layout": "bullets",
+            },
+            {
+                "title": "Statement Slide",
+                "summary": "Summary statement",
+                "bullets": [],
+                "layout": "statement",
+                "statement": "This is a bold statement layout test.",
+            },
+            {
+                "title": "Big Number Slide",
+                "summary": "Summary metrics",
+                "bullets": [],
+                "layout": "big_number",
+                "big_number": "99%",
+                "big_number_context": "accuracy on test assertions",
+            },
+        ],
+    }
+    fd, path = tempfile.mkstemp(suffix=".json")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(layout_deck, f)
+    try:
+        await export_slides(path, temp_output_file)
+        assert os.path.exists(temp_output_file)
+        prs = Presentation(temp_output_file)
+        # Should have 4 slides: 1 title + 3 content
+        assert len(prs.slides) == 4
+        # Validate that slide 1 title is bullets
+        assert prs.slides[1].shapes[0].text_frame.text == "Bullets Slide"
+        # Validate slide 2 title is statement
+        assert prs.slides[2].shapes[0].text_frame.text == "Statement Slide"
+        # Validate slide 3 title is big number
+        assert prs.slides[3].shapes[0].text_frame.text == "Big Number Slide"
+    finally:
+        os.remove(path)

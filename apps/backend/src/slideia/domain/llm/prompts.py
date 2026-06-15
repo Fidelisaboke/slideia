@@ -13,6 +13,10 @@ INSTRUCTIONS:
 4. Each slide should have a brief summary (1-2 sentences describing the slide's purpose)
 5. Ensure logical flow between slides
 6. Include citations only if relevant facts/data are referenced. Provide both per-slide citations and a consolidated list of all references.
+7. Assign a layout to each slide based on its content/purpose. Choose the most appropriate option from:
+   - "bullets": standard slide with 3-5 bullet points (default, use for general/detailed content)
+   - "statement": a single bold statement, quote or takeaway (use for openers, closers, or key focus slides)
+   - "big_number": focuses on one key statistic or metric with context (use when data/stats are the primary highlight)
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -24,6 +28,7 @@ OUTPUT FORMAT (valid JSON only):
     {{
       "title": "Slide Title",
       "summary": "Brief 1-2 sentence description of what this slide covers",
+      "layout": "bullets" | "statement" | "big_number",
       "citations": ["Source 1"]
     }}
   ],
@@ -39,22 +44,39 @@ SLIDE_PROMPT = """Create content for a PowerPoint slide.
 SLIDE INFORMATION:
 - Title: {title}
 - Purpose: {summary}
+- Layout: {layout}
 
-CONTENT REQUIREMENTS:
+LAYOUT CONTENT REQUIREMENTS:
+Depending on the requested "Layout", generate the corresponding fields:
 
-1. BULLET POINTS (3-5 bullets):
-   - Each bullet should be concise and actionable (max 10-12 words)
-   - Focus on key takeaways, not repeating the summary
-   - Use parallel structure
-   - No redundancy
+1. For layout "bullets":
+   - "bullets": A list of 3-5 concise, actionable bullet points (max 10-12 words each).
+   - "statement": null
+   - "big_number": null
+   - "big_number_context": null
 
-2. SPEAKER NOTES (2-3 sentences)
+2. For layout "statement":
+   - "statement": A single bold, high-impact statement, key takeaway, or quote (1 sentence, max 15 words) summarizing the core message.
+   - "bullets": []
+   - "big_number": null
+   - "big_number_context": null
 
-3. IMAGE PROMPT (1 sentence describing a relevant visual)
+3. For layout "big_number":
+   - "big_number": A single key statistic, percentage, or metric (e.g., "73%", "5.2 Billion", "$10M+").
+   - "big_number_context": A short phrase/sentence providing the context for this number (max 8-10 words, e.g., "of remote employees report burnout").
+   - "bullets": []
+   - "statement": null
+
+COMMON FIELDS:
+- "notes": Speaker notes (2-3 sentences)
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
 
 OUTPUT FORMAT (valid JSON only):
 {{
   "bullets": ["...", "..."],
+  "statement": "...",
+  "big_number": "...",
+  "big_number_context": "...",
   "notes": "...",
   "image_prompt": "..."
 }}
@@ -69,24 +91,41 @@ REGENERATE_SLIDE_PROMPT = """Regenerate the content for a PowerPoint slide.
 SLIDE INFORMATION:
 - Title: {title}
 - Purpose: {summary}
+- Layout: {layout}
 
 {instruction_block}
 
-CONTENT REQUIREMENTS:
+LAYOUT CONTENT REQUIREMENTS:
+Depending on the requested "Layout", generate the corresponding fields:
 
-1. BULLET POINTS (3-5 bullets):
-   - Each bullet should be concise and actionable (max 10-12 words)
-   - Focus on key takeaways, not repeating the summary
-   - Use parallel structure
-   - No redundancy
+1. For layout "bullets":
+   - "bullets": A list of 3-5 concise, actionable bullet points (max 10-12 words each).
+   - "statement": null
+   - "big_number": null
+   - "big_number_context": null
 
-2. SPEAKER NOTES (2-3 sentences)
+2. For layout "statement":
+   - "statement": A single bold, high-impact statement, key takeaway, or quote (1 sentence, max 15 words) summarizing the core message.
+   - "bullets": []
+   - "big_number": null
+   - "big_number_context": null
 
-3. IMAGE PROMPT (1 sentence describing a relevant visual)
+3. For layout "big_number":
+   - "big_number": A single key statistic, percentage, or metric (e.g., "73%", "5.2 Billion", "$10M+").
+   - "big_number_context": A short phrase/sentence providing the context for this number (max 8-10 words, e.g., "of remote employees report burnout").
+   - "bullets": []
+   - "statement": null
+
+COMMON FIELDS:
+- "notes": Speaker notes (2-3 sentences)
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
 
 OUTPUT FORMAT (valid JSON only):
 {{
   "bullets": ["...", "..."],
+  "statement": "...",
+  "big_number": "...",
+  "big_number_context": "...",
   "notes": "...",
   "image_prompt": "..."
 }}
@@ -107,19 +146,41 @@ PRESENTATION CONTEXT:
 SLIDES TO DRAFT:
 {slides_specs}
 
-CONTENT REQUIREMENTS FOR EACH SLIDE:
-1. BULLET POINTS (3-5 bullets):
-   - Concise and actionable (max 10-12 words)
-   - Focus on key takeaways
-2. SPEAKER NOTES (2-3 sentences)
-3. IMAGE PROMPT (1 sentence describing a relevant professional visual)
+LAYOUT CONTENT REQUIREMENTS:
+Depending on each slide's "layout", generate the corresponding fields:
+
+1. For layout "bullets":
+   - "bullets": A list of 3-5 concise, actionable bullet points (max 10-12 words each).
+   - "statement": null
+   - "big_number": null
+   - "big_number_context": null
+
+2. For layout "statement":
+   - "statement": A single bold, high-impact statement, key takeaway, or quote (1 sentence, max 15 words) summarizing the core message.
+   - "bullets": []
+   - "big_number": null
+   - "big_number_context": null
+
+3. For layout "big_number":
+   - "big_number": A single key statistic, percentage, or metric (e.g., "73%", "5.2 Billion", "$10M+").
+   - "big_number_context": A short phrase/sentence providing the context for this number (max 8-10 words, e.g., "of remote employees report burnout").
+   - "bullets": []
+   - "statement": null
+
+COMMON FIELDS FOR ALL SLIDES:
+- "notes": Speaker notes (2-3 sentences)
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
 
 OUTPUT FORMAT (valid JSON only):
 {{
   "slides": [
     {{
       "title": "Slide Title",
-      "bullets": ["Bullet 1", "Bullet 2"],
+      "layout": "bullets" | "statement" | "big_number",
+      "bullets": ["..."],
+      "statement": "...",
+      "big_number": "...",
+      "big_number_context": "...",
       "notes": "...",
       "image_prompt": "..."
     }}

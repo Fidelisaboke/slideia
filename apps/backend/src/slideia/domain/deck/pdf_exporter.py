@@ -164,29 +164,101 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         spaceAfter=8,
     )
 
+    statement_style = ParagraphStyle(
+        "Statement",
+        parent=styles["Normal"],
+        fontName="Helvetica-BoldOblique",
+        fontSize=24,
+        textColor=theme["text"],
+        leading=30,
+        spaceAfter=12,
+    )
+
+    big_number_style = ParagraphStyle(
+        "BigNumber",
+        parent=styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=72,
+        textColor=theme["primary"],
+        leading=78,
+        spaceAfter=14,
+    )
+
+    big_number_context_style = ParagraphStyle(
+        "BigNumberContext",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=16,
+        textColor=theme["text"],
+        leading=20,
+        spaceAfter=12,
+    )
+
+    layout = s.get("layout", "bullets")
+    if not layout:
+        layout = "bullets"
+
     current_y = height - 1.5 * inch
 
-    # Draw Summary
-    summary = s.get("summary", "")
-    if summary:
-        p = Paragraph(summary, summary_style)
-        w, h = p.wrap(content_width, height)
-        p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= h + 12
+    if layout == "bullets":
+        # Draw Summary
+        summary = s.get("summary", "")
+        if summary:
+            p = Paragraph(summary, summary_style)
+            w, h = p.wrap(content_width, height)
+            p.drawOn(c, 0.5 * inch, current_y - h)
+            current_y -= h + 12
 
-    # Draw Bullets
-    bullets = s.get("bullets", [])
-    for bullet_text in bullets:
-        clean_text = bullet_text.strip()
-        if not (clean_text.startswith("•") or clean_text.startswith("-")):
-            clean_text = f"• {clean_text}"
+        # Draw Bullets
+        bullets = s.get("bullets", [])
+        for bullet_text in bullets:
+            clean_text = bullet_text.strip()
+            if not (clean_text.startswith("•") or clean_text.startswith("-")):
+                clean_text = f"• {clean_text}"
 
-        p = Paragraph(clean_text, bullet_style)
-        w, h = p.wrap(content_width, height)
-        if current_y - h < 0.5 * inch:
-            break
-        p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= h + 8
+            p = Paragraph(clean_text, bullet_style)
+            w, h = p.wrap(content_width, height)
+            if current_y - h < 0.5 * inch:
+                break
+            p.drawOn(c, 0.5 * inch, current_y - h)
+            current_y -= h + 8
+
+    elif layout == "statement":
+        statement = s.get("statement", "")
+        if not isinstance(statement, str):
+            statement = str(statement) if statement else ""
+        statement = statement.strip()
+        if not statement:
+            statement = s.get("summary", "")
+        if statement:
+            p = Paragraph(f"“{statement}”", statement_style)
+            w, h = p.wrap(content_width, height)
+            p.drawOn(c, 0.5 * inch, current_y - h - 0.5 * inch)
+
+    elif layout == "big_number":
+        big_number = s.get("big_number", "")
+        if not isinstance(big_number, str):
+            big_number = str(big_number) if big_number else ""
+        big_number = big_number.strip()
+
+        big_number_context = s.get("big_number_context", "")
+        if not isinstance(big_number_context, str):
+            big_number_context = str(big_number_context) if big_number_context else ""
+        big_number_context = big_number_context.strip()
+
+        if not big_number:
+            big_number = "50%"
+            big_number_context = s.get("summary", "No context provided")
+
+        p_num = Paragraph(big_number, big_number_style)
+        w, h = p_num.wrap(content_width, height)
+        p_num.drawOn(c, 0.5 * inch, current_y - h)
+        current_y -= h + 14
+
+        if big_number_context:
+            p_ctx = Paragraph(big_number_context, big_number_context_style)
+            w, h = p_ctx.wrap(content_width, height)
+            p_ctx.drawOn(c, 0.5 * inch, current_y - h)
 
     # Image Handling — placed in upper-right quadrant below the header
     image_url = s.get("image_url")

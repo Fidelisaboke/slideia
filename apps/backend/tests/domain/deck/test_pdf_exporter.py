@@ -79,3 +79,38 @@ async def test_export_deck_to_pdf_with_custom_palette(tmp_path):
     await export_deck_to_pdf(input_path, output_pdf)
     assert os.path.exists(output_pdf)
     assert os.path.getsize(output_pdf) > 0
+
+
+@pytest.mark.asyncio
+async def test_export_deck_to_pdf_layouts(tmp_path):
+    deck_data = {
+        "title": "Layout Test PDF",
+        "slides": [
+            {
+                "title": "Bullets Slide",
+                "bullets": ["Bullet 1", "Bullet 2"],
+                "layout": "bullets",
+            },
+            {
+                "title": "Statement Slide",
+                "bullets": [],
+                "layout": "statement",
+                "statement": "This is a statement slide in PDF.",
+            },
+            {
+                "title": "Big Number Slide",
+                "bullets": [],
+                "layout": "big_number",
+                "big_number": "100%",
+                "big_number_context": "covered by layouts test.",
+            },
+        ],
+    }
+    input_path = str(tmp_path / "layout_pdf.json")
+    with open(input_path, "w", encoding="utf-8") as f:
+        json.dump(deck_data, f)
+
+    output_pdf = str(tmp_path / "layout_pdf.pdf")
+    await export_deck_to_pdf(input_path, output_pdf)
+    assert os.path.exists(output_pdf)
+    assert os.path.getsize(output_pdf) > 0

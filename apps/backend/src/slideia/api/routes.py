@@ -177,6 +177,7 @@ async def regenerate_slide(request: RegenerateSlideRequest):
             title=request.title,
             summary=request.summary,
             instruction=request.instruction,
+            layout=request.layout,
         )
         logger.info("Slide regenerated successfully")
         return result
