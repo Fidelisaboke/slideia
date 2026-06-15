@@ -69,7 +69,7 @@ Depending on the requested "Layout", generate the corresponding fields:
 
 COMMON FIELDS:
 - "notes": Speaker notes (2-3 sentences)
-- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide (set to null for layout "statement" and "big_number" as they do not contain images).
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -78,7 +78,7 @@ OUTPUT FORMAT (valid JSON only):
   "big_number": "...",
   "big_number_context": "...",
   "notes": "...",
-  "image_prompt": "..."
+  "image_prompt": null
 }}
 
 CRITICAL RULES:
@@ -118,7 +118,7 @@ Depending on the requested "Layout", generate the corresponding fields:
 
 COMMON FIELDS:
 - "notes": Speaker notes (2-3 sentences)
-- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide (set to null for layout "statement" and "big_number" as they do not contain images).
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -127,7 +127,7 @@ OUTPUT FORMAT (valid JSON only):
   "big_number": "...",
   "big_number_context": "...",
   "notes": "...",
-  "image_prompt": "..."
+  "image_prompt": null
 }}
 
 CRITICAL RULES:
@@ -169,7 +169,7 @@ Depending on each slide's "layout", generate the corresponding fields:
 
 COMMON FIELDS FOR ALL SLIDES:
 - "notes": Speaker notes (2-3 sentences)
-- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide.
+- "image_prompt": A 1-sentence prompt describing a relevant professional visual/graphic for this slide (set to null for layout "statement" and "big_number" as they do not contain images).
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -182,7 +182,7 @@ OUTPUT FORMAT (valid JSON only):
       "big_number": "...",
       "big_number_context": "...",
       "notes": "...",
-      "image_prompt": "..."
+      "image_prompt": null
     }}
   ]
 }}

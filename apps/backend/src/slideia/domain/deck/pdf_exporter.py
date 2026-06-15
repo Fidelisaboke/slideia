@@ -132,13 +132,18 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
     c.setLineWidth(2)
     c.line(0.5 * inch, height - 1.0 * inch, width - 0.5 * inch, height - 1.0 * inch)
 
+    # Get slide layout (default to "bullets" for backward compatibility)
+    layout = s.get("layout", "bullets")
+    if not layout:
+        layout = "bullets"
+
     # Layout dimensions and image detection
     image_width = 3 * inch
     image_height = image_width / 1.78
 
     image_url = s.get("image_url")
     image_prompt = s.get("image_prompt", "")
-    has_image = bool(image_url) or bool(image_prompt)
+    has_image = (bool(image_url) or bool(image_prompt)) and layout == "bullets"
 
     if has_image:
         content_width = 6.5 * inch
@@ -177,9 +182,9 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         "Statement",
         parent=styles["Normal"],
         fontName="Helvetica-BoldOblique",
-        fontSize=28 if not has_image else 22,
+        fontSize=36,
         textColor=theme["text"],
-        leading=34 if not has_image else 28,
+        leading=44,
         spaceAfter=12,
         alignment=TA_CENTER,
     )
@@ -188,9 +193,9 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         "BigNumber",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
-        fontSize=96 if not has_image else 72,
+        fontSize=100,
         textColor=theme["primary"],
-        leading=104 if not has_image else 78,
+        leading=110,
         spaceAfter=14,
         alignment=TA_CENTER,
     )
@@ -199,16 +204,12 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         "BigNumberContext",
         parent=styles["Normal"],
         fontName="Helvetica",
-        fontSize=20 if not has_image else 16,
+        fontSize=24,
         textColor=theme["text"],
-        leading=24 if not has_image else 20,
+        leading=28,
         spaceAfter=12,
         alignment=TA_CENTER,
     )
-
-    layout = s.get("layout", "bullets")
-    if not layout:
-        layout = "bullets"
 
     current_y = height - 1.5 * inch
 
@@ -293,33 +294,34 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
             p_ctx.drawOn(c, content_x, y_ctx)
 
     # Image Handling — placed in upper-right quadrant below the header
-    img_x = width - image_width - 0.5 * inch
-    img_y = (height - 1.0 * inch) / 2.0 - image_height / 2.0
+    if has_image:
+        img_x = width - image_width - 0.5 * inch
+        img_y = (height - 1.0 * inch) / 2.0 - image_height / 2.0
 
-    if image_url:
-        try:
-            logger.info(f"Downloading image for PDF: {image_url}")
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(image_url)
-            if response.status_code == 200:
-                img_data = BytesIO(response.content)
-                c.drawImage(
-                    reportlab_image_from_stream(img_data),
-                    img_x,
-                    img_y,
-                    width=image_width,
-                    height=image_height,
-                    preserveAspectRatio=True,
-                    mask="auto",
-                )
-            else:
-                logger.warning(f"Failed to download image: status {response.status_code}")
+        if image_url:
+            try:
+                logger.info(f"Downloading image for PDF: {image_url}")
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get(image_url)
+                if response.status_code == 200:
+                    img_data = BytesIO(response.content)
+                    c.drawImage(
+                        reportlab_image_from_stream(img_data),
+                        img_x,
+                        img_y,
+                        width=image_width,
+                        height=image_height,
+                        preserveAspectRatio=True,
+                        mask="auto",
+                    )
+                else:
+                    logger.warning(f"Failed to download image: status {response.status_code}")
+                    _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
+            except Exception as e:
+                logger.warning(f"Failed to add image to PDF: {e}")
                 _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
-        except Exception as e:
-            logger.warning(f"Failed to add image to PDF: {e}")
+        elif image_prompt:
             _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
-    elif image_prompt:
-        _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
 
 
 def _draw_image_placeholder(c, prompt, img_x, img_y, img_w, img_h, theme: dict):

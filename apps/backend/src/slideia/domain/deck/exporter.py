@@ -134,15 +134,15 @@ async def export_slides(input_path: str, output_path: str):
             title_para.font.color.rgb = font_color
         title_para.alignment = PP_ALIGN.LEFT
 
-        # Determine if slide has an image
-        image_path = s.get("image_path")
-        image_url = s.get("image_url")
-        has_image = bool(image_url) or bool(image_path)
-
         # Get slide layout (default to "bullets" for backward compatibility)
         layout = s.get("layout", "bullets")
         if not layout:
             layout = "bullets"
+
+        # Determine if slide has an image (only bullets layout uses images)
+        image_path = s.get("image_path")
+        image_url = s.get("image_url")
+        has_image = (bool(image_url) or bool(image_path)) and layout == "bullets"
 
         # Position and size the content text box dynamically to prevent overlap with the image slot
         if has_image:
@@ -261,7 +261,7 @@ async def export_slides(input_path: str, output_path: str):
                 p = text_frame.paragraphs[0]
                 p.text = f"“{statement}”"
                 p.level = 0
-                p.font.size = Pt(28) if has_image else Pt(36)
+                p.font.size = Pt(40)
                 p.font.italic = True
                 p.font.bold = True
                 p.font.name = font_name
@@ -287,7 +287,7 @@ async def export_slides(input_path: str, output_path: str):
             p_num = text_frame.paragraphs[0]
             p_num.text = big_number
             p_num.level = 0
-            p_num.font.size = Pt(72) if has_image else Pt(96)
+            p_num.font.size = Pt(100)
             p_num.font.bold = True
             p_num.font.name = font_name
             if font_color:
@@ -299,7 +299,7 @@ async def export_slides(input_path: str, output_path: str):
                 p_ctx = text_frame.add_paragraph()
                 p_ctx.text = big_number_context
                 p_ctx.level = 0
-                p_ctx.font.size = Pt(18) if has_image else Pt(22)
+                p_ctx.font.size = Pt(24)
                 p_ctx.font.bold = False
                 p_ctx.font.name = font_name
                 if font_color:
@@ -330,59 +330,60 @@ async def export_slides(input_path: str, output_path: str):
 
         # Image dimensions and position — right-column layout
         # Start low enough to clear the title bar and give breathing room
-        img_left = Inches(6.8)
-        img_width = Inches(2.7)
-        img_height = Inches(2.2)
-        # Center the image vertically within the content area (1.8 to 6.3)
-        img_top = Inches(1.8) + (Inches(4.5) - img_height) / 2
+        if has_image:
+            img_left = Inches(6.8)
+            img_width = Inches(2.7)
+            img_height = Inches(2.2)
+            # Center the image vertically within the content area (1.8 to 6.3)
+            img_top = Inches(1.8) + (Inches(4.5) - img_height) / 2
 
-        pic = None
+            pic = None
 
-        # Try to fetch image URL first
-        if image_url:
-            try:
-                logger.info(f"Downloading image from {image_url}...")
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.get(image_url)
-                if response.status_code == 200:
-                    image_stream = BytesIO(response.content)
+            # Try to fetch image URL first
+            if image_url:
+                try:
+                    logger.info(f"Downloading image from {image_url}...")
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.get(image_url)
+                    if response.status_code == 200:
+                        image_stream = BytesIO(response.content)
+                        pic = content_slide.shapes.add_picture(
+                            image_stream, img_left, img_top, width=img_width, height=img_height
+                        )
+                    else:
+                        logger.warning(f"Failed to download image: status {response.status_code}")
+                except Exception as e:
+                    logger.warning(f"Error downloading image: {e}")
+
+            # If no URL or download failed, try local path
+            if not pic and image_path and os.path.exists(image_path):
+                try:
                     pic = content_slide.shapes.add_picture(
-                        image_stream, img_left, img_top, width=img_width, height=img_height
+                        image_path, img_left, img_top, width=img_width, height=img_height
                     )
-                else:
-                    logger.warning(f"Failed to download image: status {response.status_code}")
-            except Exception as e:
-                logger.warning(f"Error downloading image: {e}")
+                except Exception as e:
+                    logger.warning(f"Image insert failed: {e}")
 
-        # If no URL or download failed, try local path
-        if not pic and image_path and os.path.exists(image_path):
-            try:
-                pic = content_slide.shapes.add_picture(
-                    image_path, img_left, img_top, width=img_width, height=img_height
-                )
-            except Exception as e:
-                logger.warning(f"Image insert failed: {e}")
+            # Add alt text if picture was created
+            if pic and image_prompt:
+                try:
+                    if hasattr(pic, "alt_text"):
+                        pic.alt_text = image_prompt
+                except Exception as e:
+                    logger.warning(f"Alt text assignment failed: {e}")
 
-        # Add alt text if picture was created
-        if pic and image_prompt:
-            try:
-                if hasattr(pic, "alt_text"):
-                    pic.alt_text = image_prompt
-            except Exception as e:
-                logger.warning(f"Alt text assignment failed: {e}")
+            # Fallback: if no picture was created, create a placeholder box
+            if not pic and image_prompt:
+                logger.info("Using placeholder shape for image.")
+                textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, img_height)
 
-        # Fallback: if no picture was created, create a placeholder box
-        if not pic and image_prompt:
-            logger.info("Using placeholder shape for image.")
-            textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, img_height)
-
-            textbox_frame = textbox.text_frame
-            textbox_frame.text = f"[Image: {image_prompt}]"
-            textbox_frame.word_wrap = True
-            p = textbox_frame.paragraphs[0]
-            p.font.size = Pt(10)
-            p.font.italic = True
-            p.alignment = PP_ALIGN.CENTER
+                textbox_frame = textbox.text_frame
+                textbox_frame.text = f"[Image: {image_prompt}]"
+                textbox_frame.word_wrap = True
+                p = textbox_frame.paragraphs[0]
+                p.font.size = Pt(10)
+                p.font.italic = True
+                p.alignment = PP_ALIGN.CENTER
 
     # Add References slide if citations exist
     citations = data.get("citations")
