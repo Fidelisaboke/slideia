@@ -9,7 +9,7 @@ from io import BytesIO
 import httpx
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.util import Inches, Pt
 from slideia.core.logging import get_logger
 from slideia.domain.deck.services import create_minimal_template
@@ -134,11 +134,33 @@ async def export_slides(input_path: str, output_path: str):
             title_para.font.color.rgb = font_color
         title_para.alignment = PP_ALIGN.LEFT
 
-        # Add content text box below title
-        content_left = Inches(0.5)
-        content_top = Inches(1.5)
-        content_width = Inches(6)
-        content_height = Inches(5)
+        # Determine if slide has an image
+        image_path = s.get("image_path")
+        image_url = s.get("image_url")
+        has_image = bool(image_url) or bool(image_path)
+
+        # Get slide layout (default to "bullets" for backward compatibility)
+        layout = s.get("layout", "bullets")
+        if not layout:
+            layout = "bullets"
+
+        # Position and size the content text box dynamically to prevent overlap with the image slot
+        if has_image:
+            # Side-by-side layout: text content on the left
+            content_left = Inches(0.8)
+            content_top = Inches(1.8)
+            content_width = Inches(5.5)
+            content_height = Inches(4.5)
+        else:
+            # Full-width layout
+            content_left = Inches(1.0)
+            content_top = Inches(1.8)
+            content_width = Inches(8.0)
+            content_height = Inches(4.5)
+
+        if layout in ("statement", "big_number"):
+            content_top = Inches(2.2)
+            content_height = Inches(3.5)
 
         content_box = content_slide.shapes.add_textbox(
             content_left, content_top, content_width, content_height
@@ -150,10 +172,9 @@ async def export_slides(input_path: str, output_path: str):
         text_frame.margin_top = Inches(0.1)
         text_frame.margin_bottom = Inches(0.1)
 
-        # Get slide layout (default to "bullets" for backward compatibility)
-        layout = s.get("layout", "bullets")
-        if not layout:
-            layout = "bullets"
+        # Center vertically for layout-specific text frames
+        if layout in ("statement", "big_number"):
+            text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
 
         # Get summary - SAFE EXTRACTION
         summary = s.get("summary", "")
@@ -240,14 +261,13 @@ async def export_slides(input_path: str, output_path: str):
                 p = text_frame.paragraphs[0]
                 p.text = f"“{statement}”"
                 p.level = 0
-                p.font.size = Pt(24)
+                p.font.size = Pt(28) if has_image else Pt(36)
                 p.font.italic = True
                 p.font.bold = True
                 p.font.name = font_name
                 if font_color:
                     p.font.color.rgb = font_color
-                p.space_before = Pt(36)
-                p.alignment = PP_ALIGN.LEFT
+                p.alignment = PP_ALIGN.CENTER
 
         elif layout == "big_number":
             big_number = s.get("big_number", "")
@@ -267,25 +287,24 @@ async def export_slides(input_path: str, output_path: str):
             p_num = text_frame.paragraphs[0]
             p_num.text = big_number
             p_num.level = 0
-            p_num.font.size = Pt(72)
+            p_num.font.size = Pt(72) if has_image else Pt(96)
             p_num.font.bold = True
             p_num.font.name = font_name
             if font_color:
                 p_num.font.color.rgb = font_color
-            p_num.alignment = PP_ALIGN.LEFT
-            p_num.space_after = Pt(14)
-            p_num.space_before = Pt(18)
+            p_num.alignment = PP_ALIGN.CENTER
+            p_num.space_after = Pt(8)
 
             if big_number_context:
                 p_ctx = text_frame.add_paragraph()
                 p_ctx.text = big_number_context
                 p_ctx.level = 0
-                p_ctx.font.size = Pt(16)
+                p_ctx.font.size = Pt(18) if has_image else Pt(22)
                 p_ctx.font.bold = False
                 p_ctx.font.name = font_name
                 if font_color:
                     p_ctx.font.color.rgb = font_color
-                p_ctx.alignment = PP_ALIGN.LEFT
+                p_ctx.alignment = PP_ALIGN.CENTER
 
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
@@ -312,9 +331,10 @@ async def export_slides(input_path: str, output_path: str):
         # Image dimensions and position — right-column layout
         # Start low enough to clear the title bar and give breathing room
         img_left = Inches(6.8)
-        img_top = Inches(2.5)
         img_width = Inches(2.7)
-        img_height = Inches(1.8)
+        img_height = Inches(2.2)
+        # Center the image vertically within the content area (1.8 to 6.3)
+        img_top = Inches(1.8) + (Inches(4.5) - img_height) / 2
 
         pic = None
 

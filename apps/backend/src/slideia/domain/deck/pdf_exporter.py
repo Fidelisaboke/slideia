@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from slideia.core.logging import get_logger
@@ -131,12 +132,20 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
     c.setLineWidth(2)
     c.line(0.5 * inch, height - 1.0 * inch, width - 0.5 * inch, height - 1.0 * inch)
 
-    # Layout dimensions
-    content_width = 6.5 * inch
+    # Layout dimensions and image detection
     image_width = 3 * inch
-
-    # 16:9 aspect ratio for image slot
     image_height = image_width / 1.78
+
+    image_url = s.get("image_url")
+    image_prompt = s.get("image_prompt", "")
+    has_image = bool(image_url) or bool(image_prompt)
+
+    if has_image:
+        content_width = 6.5 * inch
+        content_x = 0.5 * inch
+    else:
+        content_width = width - 1.0 * inch
+        content_x = 0.5 * inch
 
     # Summary & Bullets using Platypus Paragraphs for wrapping
     styles = getSampleStyleSheet()
@@ -168,30 +177,33 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         "Statement",
         parent=styles["Normal"],
         fontName="Helvetica-BoldOblique",
-        fontSize=24,
+        fontSize=28 if not has_image else 22,
         textColor=theme["text"],
-        leading=30,
+        leading=34 if not has_image else 28,
         spaceAfter=12,
+        alignment=TA_CENTER,
     )
 
     big_number_style = ParagraphStyle(
         "BigNumber",
         parent=styles["Normal"],
         fontName="Helvetica-Bold",
-        fontSize=72,
+        fontSize=96 if not has_image else 72,
         textColor=theme["primary"],
-        leading=78,
+        leading=104 if not has_image else 78,
         spaceAfter=14,
+        alignment=TA_CENTER,
     )
 
     big_number_context_style = ParagraphStyle(
         "BigNumberContext",
         parent=styles["Normal"],
         fontName="Helvetica",
-        fontSize=16,
+        fontSize=20 if not has_image else 16,
         textColor=theme["text"],
-        leading=20,
+        leading=24 if not has_image else 20,
         spaceAfter=12,
+        alignment=TA_CENTER,
     )
 
     layout = s.get("layout", "bullets")
@@ -206,7 +218,7 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         if summary:
             p = Paragraph(summary, summary_style)
             w, h = p.wrap(content_width, height)
-            p.drawOn(c, 0.5 * inch, current_y - h)
+            p.drawOn(c, content_x, current_y - h)
             current_y -= h + 12
 
         # Draw Bullets
@@ -220,7 +232,7 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
             w, h = p.wrap(content_width, height)
             if current_y - h < 0.5 * inch:
                 break
-            p.drawOn(c, 0.5 * inch, current_y - h)
+            p.drawOn(c, content_x, current_y - h)
             current_y -= h + 8
 
     elif layout == "statement":
@@ -233,7 +245,14 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         if statement:
             p = Paragraph(f"“{statement}”", statement_style)
             w, h = p.wrap(content_width, height)
-            p.drawOn(c, 0.5 * inch, current_y - h - 0.5 * inch)
+
+            # Position statement vertically
+            if not has_image:
+                # Vertically centered in the content area
+                y_draw = (height - 1.0 * inch) / 2.0 - h / 2.0
+            else:
+                y_draw = current_y - h - 0.5 * inch
+            p.drawOn(c, content_x, y_draw)
 
     elif layout == "big_number":
         big_number = s.get("big_number", "")
@@ -251,21 +270,31 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
             big_number_context = s.get("summary", "No context provided")
 
         p_num = Paragraph(big_number, big_number_style)
-        w, h = p_num.wrap(content_width, height)
-        p_num.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= h + 14
+        w_num, h_num = p_num.wrap(content_width, height)
 
+        p_ctx = None
+        h_ctx = 0
         if big_number_context:
             p_ctx = Paragraph(big_number_context, big_number_context_style)
-            w, h = p_ctx.wrap(content_width, height)
-            p_ctx.drawOn(c, 0.5 * inch, current_y - h)
+            w_ctx, h_ctx = p_ctx.wrap(content_width, height)
+
+        total_h = h_num + 14 + h_ctx
+
+        if not has_image:
+            # Vertically centered
+            y_num = (height - 1.0 * inch) / 2.0 - total_h / 2.0 + h_ctx + 14
+        else:
+            y_num = current_y - h_num
+
+        p_num.drawOn(c, content_x, y_num)
+
+        if p_ctx:
+            y_ctx = y_num - 14 - h_ctx
+            p_ctx.drawOn(c, content_x, y_ctx)
 
     # Image Handling — placed in upper-right quadrant below the header
-    image_url = s.get("image_url")
-    image_prompt = s.get("image_prompt", "")
-
     img_x = width - image_width - 0.5 * inch
-    img_y = height - 1.5 * inch - image_height
+    img_y = (height - 1.0 * inch) / 2.0 - image_height / 2.0
 
     if image_url:
         try:
@@ -283,6 +312,9 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
                     preserveAspectRatio=True,
                     mask="auto",
                 )
+            else:
+                logger.warning(f"Failed to download image: status {response.status_code}")
+                _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
         except Exception as e:
             logger.warning(f"Failed to add image to PDF: {e}")
             _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)

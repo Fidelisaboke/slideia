@@ -245,7 +245,11 @@ async def export_pptx(request: FullDeckExportRequest):
             slide_data = {
                 "title": slide.title,
                 "summary": slide.summary,
+                "layout": slide.layout,
                 "bullets": slide.bullets,
+                "statement": slide.statement,
+                "big_number": slide.big_number,
+                "big_number_context": slide.big_number_context,
                 "image_prompt": slide.image_prompt,
                 "image_url": image_urls[i],
                 "notes": slide.notes,
@@ -334,7 +338,11 @@ async def export_pdf(request: FullDeckExportRequest):
             slide_data = {
                 "title": slide.title,
                 "summary": slide.summary,
+                "layout": slide.layout,
                 "bullets": slide.bullets,
+                "statement": slide.statement,
+                "big_number": slide.big_number,
+                "big_number_context": slide.big_number_context,
                 "image_prompt": slide.image_prompt,
                 "image_url": image_urls[i],
                 # Notes are ignored in PDF as per user feedback
