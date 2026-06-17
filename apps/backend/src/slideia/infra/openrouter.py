@@ -150,6 +150,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         prompt = SLIDE_PROMPT.format(
             title=slide_spec.get("title", "Slide"),
             summary=slide_spec.get("summary", ""),
+            layout=slide_spec.get("layout", "bullets"),
         )
         return await self._call(prompt)
 
@@ -159,7 +160,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         """Draft content for multiple slides in a single LLM call."""
         specs_str = "\n".join(
             [
-                f"SLIDE {i + 1}:\n- Title: {s.get('title')}\n- Purpose: {s.get('summary')}\n"
+                f"SLIDE {i + 1}:\n- Title: {s.get('title')}\n- Purpose: {s.get('summary')}\n- Layout: {s.get('layout', 'bullets')}\n"
                 for i, s in enumerate(slide_specs)
             ]
         )
@@ -172,7 +173,9 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         # Increase max_tokens for batch calls
         return await self._call(prompt, max_tokens=4096)
 
-    async def regenerate_slide(self, title: str, summary: str, instruction: str | None = None) -> dict:
+    async def regenerate_slide(
+        self, title: str, summary: str, instruction: str | None = None, layout: str = "bullets"
+    ) -> dict:
         """Re-draft a slide's content, optionally guided by user instruction."""
         if instruction:
             instruction_block = f"USER INSTRUCTION:\n{instruction}\n\nPlease incorporate the above instruction when generating the new content."
@@ -182,6 +185,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         prompt = REGENERATE_SLIDE_PROMPT.format(
             title=title,
             summary=summary,
+            layout=layout,
             instruction_block=instruction_block,
         )
         return await self._call(prompt)

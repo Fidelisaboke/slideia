@@ -177,6 +177,7 @@ async def regenerate_slide(request: RegenerateSlideRequest):
             title=request.title,
             summary=request.summary,
             instruction=request.instruction,
+            layout=request.layout,
         )
         logger.info("Slide regenerated successfully")
         return result
@@ -244,7 +245,18 @@ async def export_pptx(request: FullDeckExportRequest):
             slide_data = {
                 "title": slide.title,
                 "summary": slide.summary,
+                "layout": slide.layout,
                 "bullets": slide.bullets,
+                "statement": slide.statement,
+                "big_number": slide.big_number,
+                "big_number_context": slide.big_number_context,
+                "column_left_title": slide.column_left_title,
+                "column_left": slide.column_left,
+                "column_right_title": slide.column_right_title,
+                "column_right": slide.column_right,
+                "steps": slide.steps,
+                "quote_text": slide.quote_text,
+                "quote_attribution": slide.quote_attribution,
                 "image_prompt": slide.image_prompt,
                 "image_url": image_urls[i],
                 "notes": slide.notes,
@@ -333,7 +345,18 @@ async def export_pdf(request: FullDeckExportRequest):
             slide_data = {
                 "title": slide.title,
                 "summary": slide.summary,
+                "layout": slide.layout,
                 "bullets": slide.bullets,
+                "statement": slide.statement,
+                "big_number": slide.big_number,
+                "big_number_context": slide.big_number_context,
+                "column_left_title": slide.column_left_title,
+                "column_left": slide.column_left,
+                "column_right_title": slide.column_right_title,
+                "column_right": slide.column_right,
+                "steps": slide.steps,
+                "quote_text": slide.quote_text,
+                "quote_attribution": slide.quote_attribution,
                 "image_prompt": slide.image_prompt,
                 "image_url": image_urls[i],
                 # Notes are ignored in PDF as per user feedback

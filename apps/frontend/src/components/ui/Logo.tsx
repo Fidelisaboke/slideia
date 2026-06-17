@@ -19,8 +19,8 @@ export default function Logo({ className, ...props }: LogoProps) {
             dx="0"
             dy="4"
             stdDeviation="6"
-            flood-color="#0d0b14"
-            flood-opacity="0.25"
+            floodColor="#0d0b14"
+            floodOpacity="0.25"
           />
         </filter>
 
@@ -31,8 +31,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           x2="100%"
           y2="100%"
         >
-          <stop offset="0%" stop-color="#7c5cca" stop-opacity="0.2" />
-          <stop offset="100%" stop-color="#c084fc" stop-opacity="0.05" />
+          <stop offset="0%" stopColor="#7c5cca" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#c084fc" stopOpacity="0.05" />
         </linearGradient>
 
         <linearGradient
@@ -42,8 +42,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           x2="100%"
           y2="100%"
         >
-          <stop offset="0%" stop-color="#7c5cca" stop-opacity="0.5" />
-          <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.15" />
+          <stop offset="0%" stopColor="#7c5cca" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.15" />
         </linearGradient>
 
         <linearGradient
@@ -53,8 +53,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           x2="100%"
           y2="100%"
         >
-          <stop offset="0%" stop-color="#a78bfa" />
-          <stop offset="100%" stop-color="#5eead4" />
+          <stop offset="0%" stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#5eead4" />
         </linearGradient>
       </defs>
 
@@ -67,8 +67,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           rx="6"
           fill="url(#logoBackSlideGrad)"
           stroke="#7c5cca"
-          stroke-width="1"
-          stroke-opacity="0.3"
+          strokeWidth="1"
+          strokeOpacity="0.3"
         />
       </g>
 
@@ -79,8 +79,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           rx="6"
           fill="url(#logoMidSlideGrad)"
           stroke="#a78bfa"
-          stroke-width="1.2"
-          stroke-opacity="0.4"
+          strokeWidth="1.2"
+          strokeOpacity="0.4"
         />
       </g>
 
@@ -94,8 +94,8 @@ export default function Logo({ className, ...props }: LogoProps) {
           rx="6"
           fill="url(#logoFrontSlideGrad)"
           stroke="white"
-          stroke-width="1"
-          stroke-opacity="0.25"
+          strokeWidth="1"
+          strokeOpacity="0.25"
         />
 
         <rect
@@ -105,7 +105,7 @@ export default function Logo({ className, ...props }: LogoProps) {
           height="3.5"
           rx="1.75"
           fill="white"
-          fill-opacity="0.85"
+          fillOpacity="0.85"
         />
 
         <rect
@@ -115,9 +115,9 @@ export default function Logo({ className, ...props }: LogoProps) {
           height="14"
           rx="2.5"
           fill="white"
-          fill-opacity="0.3"
+          fillOpacity="0.3"
         />
-        <circle cx="15" cy="20.5" r="3.5" fill="white" fill-opacity="0.2" />
+        <circle cx="15" cy="20.5" r="3.5" fill="white" fillOpacity="0.2" />
 
         <rect
           x="28"
@@ -126,7 +126,7 @@ export default function Logo({ className, ...props }: LogoProps) {
           height="2"
           rx="1"
           fill="white"
-          fill-opacity="0.7"
+          fillOpacity="0.7"
         />
         <rect
           x="28"
@@ -135,7 +135,7 @@ export default function Logo({ className, ...props }: LogoProps) {
           height="2"
           rx="1"
           fill="white"
-          fill-opacity="0.7"
+          fillOpacity="0.7"
         />
         <rect
           x="28"
@@ -144,7 +144,7 @@ export default function Logo({ className, ...props }: LogoProps) {
           height="2"
           rx="1"
           fill="white"
-          fill-opacity="0.7"
+          fillOpacity="0.7"
         />
       </g>
     </svg>

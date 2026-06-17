@@ -37,6 +37,7 @@ class RegenerateSlideRequest(BaseModel):
     title: str
     summary: str
     instruction: str | None = None
+    layout: str = "bullets"
 
 
 class SlideExportItem(BaseModel):
@@ -48,6 +49,17 @@ class SlideExportItem(BaseModel):
     notes: str = ""
     image_prompt: str = ""
     theme: dict | None = None
+    layout: str = "bullets"
+    statement: str | None = None
+    big_number: str | None = None
+    big_number_context: str | None = None
+    column_left_title: str | None = None
+    column_left: list[str] | None = None
+    column_right_title: str | None = None
+    column_right: list[str] | None = None
+    steps: list[str] | None = None
+    quote_text: str | None = None
+    quote_attribution: str | None = None
 
 
 class FullDeckExportRequest(BaseModel):

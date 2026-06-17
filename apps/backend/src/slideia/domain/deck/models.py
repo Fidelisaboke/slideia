@@ -8,6 +8,10 @@ class Slide:
     notes: str | None = None
     image_prompt: str | None = None
     theme: dict | None = None
+    layout: str = "bullets"
+    statement: str | None = None
+    big_number: str | None = None
+    big_number_context: str | None = None
 
 
 @dataclass
@@ -31,6 +35,10 @@ class Deck:
                     "notes": slide.notes,
                     "image_prompt": slide.image_prompt,
                     "theme": slide.theme,
+                    "layout": slide.layout,
+                    "statement": slide.statement,
+                    "big_number": slide.big_number,
+                    "big_number_context": slide.big_number_context,
                 }
                 for slide in self.slides
             ],

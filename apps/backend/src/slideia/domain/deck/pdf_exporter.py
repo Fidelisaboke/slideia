@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph
 from slideia.core.logging import get_logger
@@ -131,12 +132,25 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
     c.setLineWidth(2)
     c.line(0.5 * inch, height - 1.0 * inch, width - 0.5 * inch, height - 1.0 * inch)
 
-    # Layout dimensions
-    content_width = 6.5 * inch
-    image_width = 3 * inch
+    # Get slide layout (default to "bullets" for backward compatibility)
+    layout = s.get("layout", "bullets")
+    if not layout:
+        layout = "bullets"
 
-    # 16:9 aspect ratio for image slot
+    # Layout dimensions and image detection
+    image_width = 3 * inch
     image_height = image_width / 1.78
+
+    image_url = s.get("image_url")
+    image_prompt = s.get("image_prompt", "")
+    has_image = (bool(image_url) or bool(image_prompt)) and layout == "bullets"
+
+    if has_image:
+        content_width = 6.5 * inch
+        content_x = 0.5 * inch
+    else:
+        content_width = width - 1.0 * inch
+        content_x = 0.5 * inch
 
     # Summary & Bullets using Platypus Paragraphs for wrapping
     styles = getSampleStyleSheet()
@@ -164,58 +178,272 @@ async def _draw_content_slide(c, s, slide_index, width, height, theme: dict):
         spaceAfter=8,
     )
 
+    statement_style = ParagraphStyle(
+        "Statement",
+        parent=styles["Normal"],
+        fontName="Helvetica-BoldOblique",
+        fontSize=36,
+        textColor=theme["text"],
+        leading=44,
+        spaceAfter=12,
+        alignment=TA_CENTER,
+    )
+
+    big_number_style = ParagraphStyle(
+        "BigNumber",
+        parent=styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=100,
+        textColor=theme["primary"],
+        leading=110,
+        spaceAfter=14,
+        alignment=TA_CENTER,
+    )
+
+    big_number_context_style = ParagraphStyle(
+        "BigNumberContext",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=24,
+        textColor=theme["text"],
+        leading=28,
+        spaceAfter=12,
+        alignment=TA_CENTER,
+    )
+
     current_y = height - 1.5 * inch
 
-    # Draw Summary
-    summary = s.get("summary", "")
-    if summary:
-        p = Paragraph(summary, summary_style)
-        w, h = p.wrap(content_width, height)
-        p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= h + 12
+    if layout == "bullets":
+        # Draw Summary
+        summary = s.get("summary", "")
+        if summary:
+            p = Paragraph(summary, summary_style)
+            w, h = p.wrap(content_width, height)
+            p.drawOn(c, content_x, current_y - h)
+            current_y -= h + 12
 
-    # Draw Bullets
-    bullets = s.get("bullets", [])
-    for bullet_text in bullets:
-        clean_text = bullet_text.strip()
-        if not (clean_text.startswith("•") or clean_text.startswith("-")):
-            clean_text = f"• {clean_text}"
+        # Draw Bullets
+        bullets = s.get("bullets", [])
+        for bullet_text in bullets:
+            clean_text = bullet_text.strip()
+            if not (clean_text.startswith("•") or clean_text.startswith("-")):
+                clean_text = f"• {clean_text}"
 
-        p = Paragraph(clean_text, bullet_style)
-        w, h = p.wrap(content_width, height)
-        if current_y - h < 0.5 * inch:
-            break
-        p.drawOn(c, 0.5 * inch, current_y - h)
-        current_y -= h + 8
+            p = Paragraph(clean_text, bullet_style)
+            w, h = p.wrap(content_width, height)
+            if current_y - h < 0.5 * inch:
+                break
+            p.drawOn(c, content_x, current_y - h)
+            current_y -= h + 8
+
+    elif layout == "statement":
+        statement = s.get("statement", "")
+        if not isinstance(statement, str):
+            statement = str(statement) if statement else ""
+        statement = statement.strip()
+        if not statement:
+            statement = s.get("summary", "")
+        if statement:
+            p = Paragraph(f"“{statement}”", statement_style)
+            w, h = p.wrap(content_width, height)
+
+            # Position statement vertically
+            if not has_image:
+                # Vertically centered in the content area
+                y_draw = (height - 1.0 * inch) / 2.0 - h / 2.0
+            else:
+                y_draw = current_y - h - 0.5 * inch
+            p.drawOn(c, content_x, y_draw)
+
+    elif layout == "big_number":
+        big_number = s.get("big_number", "")
+        if not isinstance(big_number, str):
+            big_number = str(big_number) if big_number else ""
+        big_number = big_number.strip()
+
+        big_number_context = s.get("big_number_context", "")
+        if not isinstance(big_number_context, str):
+            big_number_context = str(big_number_context) if big_number_context else ""
+        big_number_context = big_number_context.strip()
+
+        if not big_number:
+            big_number = "50%"
+            big_number_context = s.get("summary", "No context provided")
+
+        p_num = Paragraph(big_number, big_number_style)
+        w_num, h_num = p_num.wrap(content_width, height)
+
+        p_ctx = None
+        h_ctx = 0
+        if big_number_context:
+            p_ctx = Paragraph(big_number_context, big_number_context_style)
+            w_ctx, h_ctx = p_ctx.wrap(content_width, height)
+
+        total_h = h_num + 14 + h_ctx
+
+        if not has_image:
+            # Vertically centered
+            y_num = (height - 1.0 * inch) / 2.0 - total_h / 2.0 + h_ctx + 14
+        else:
+            y_num = current_y - h_num
+
+        p_num.drawOn(c, content_x, y_num)
+
+        if p_ctx:
+            y_ctx = y_num - 14 - h_ctx
+            p_ctx.drawOn(c, content_x, y_ctx)
+
+    elif layout == "two_column":
+        col_left_title = (s.get("column_left_title") or "").strip()
+        col_left = s.get("column_left") or []
+        col_right_title = (s.get("column_right_title") or "").strip()
+        col_right = s.get("column_right") or []
+
+        col_w = (width - 1.5 * inch) / 2.0
+        col_title_style = ParagraphStyle(
+            "ColTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            textColor=theme["primary"],
+            leading=16,
+            spaceAfter=6,
+            alignment=TA_LEFT,
+        )
+        col_item_style = ParagraphStyle(
+            "ColItem",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=14,
+            textColor=theme["text"],
+            leading=18,
+            spaceAfter=5,
+            alignment=TA_LEFT,
+        )
+
+        for col_idx, (col_title, col_items) in enumerate(
+            [(col_left_title, col_left), (col_right_title, col_right)]
+        ):
+            col_x = 0.5 * inch + col_idx * (col_w + 0.5 * inch)
+            y = current_y
+
+            if col_title:
+                p = Paragraph(col_title.upper(), col_title_style)
+                w, h = p.wrap(col_w, height)
+                p.drawOn(c, col_x, y - h)
+                y -= h + 8
+
+            for item in col_items:
+                if not isinstance(item, str):
+                    item = str(item)
+                clean = item.strip()
+                text = f"\u25aa {clean}" if not clean.startswith(("\u25aa", "\u2022", "-")) else clean
+                p = Paragraph(text, col_item_style)
+                w, h = p.wrap(col_w, height)
+                if y - h < 0.5 * inch:
+                    break
+                p.drawOn(c, col_x, y - h)
+                y -= h + 5
+
+    elif layout == "steps":
+        steps = s.get("steps") or []
+        step_style = ParagraphStyle(
+            "Step",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=18,
+            textColor=theme["text"],
+            leading=24,
+            spaceAfter=10,
+            alignment=TA_LEFT,
+        )
+        step_paragraphs = []
+        total_h = 0
+        for i, step in enumerate(steps):
+            if not isinstance(step, str):
+                step = str(step)
+            text = f"{i + 1}.  {step.strip()}"
+            p = Paragraph(text, step_style)
+            w, h = p.wrap(content_width, height)
+            step_paragraphs.append((p, h))
+            total_h += h + 10
+
+        y = (height - 1.0 * inch) / 2.0 + total_h / 2.0
+        for p, h in step_paragraphs:
+            if y - h < 0.5 * inch:
+                break
+            p.drawOn(c, content_x, y - h)
+            y -= h + 10
+
+    elif layout == "quote":
+        quote_text = (s.get("quote_text") or "").strip()
+        quote_attribution = (s.get("quote_attribution") or "").strip()
+        if not quote_text:
+            quote_text = s.get("summary", "")
+
+        quote_style = ParagraphStyle(
+            "QuoteText",
+            parent=styles["Normal"],
+            fontName="Helvetica-Oblique",
+            fontSize=26,
+            textColor=theme["text"],
+            leading=34,
+            spaceAfter=14,
+            alignment=TA_CENTER,
+        )
+        attr_style = ParagraphStyle(
+            "QuoteAttr",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=14,
+            textColor=theme["secondary"],
+            leading=18,
+            spaceAfter=0,
+            alignment=TA_CENTER,
+        )
+
+        p_q = Paragraph(f"\u201c{quote_text}\u201d", quote_style) if quote_text else None
+        p_attr = Paragraph(quote_attribution, attr_style) if quote_attribution else None
+
+        _, h_q = p_q.wrap(content_width, height) if p_q else (0, 0)
+        _, h_a = p_attr.wrap(content_width, height) if p_attr else (0, 0)
+        total_h = h_q + (14 if p_q and p_attr else 0) + h_a
+
+        y_q = (height - 1.0 * inch) / 2.0 + total_h / 2.0
+        if p_q:
+            p_q.drawOn(c, content_x, y_q - h_q)
+        if p_attr:
+            p_attr.drawOn(c, content_x, y_q - h_q - 14 - h_a)
 
     # Image Handling — placed in upper-right quadrant below the header
-    image_url = s.get("image_url")
-    image_prompt = s.get("image_prompt", "")
+    if has_image:
+        img_x = width - image_width - 0.5 * inch
+        img_y = (height - 1.0 * inch) / 2.0 - image_height / 2.0
 
-    img_x = width - image_width - 0.5 * inch
-    img_y = height - 1.5 * inch - image_height
-
-    if image_url:
-        try:
-            logger.info(f"Downloading image for PDF: {image_url}")
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(image_url)
-            if response.status_code == 200:
-                img_data = BytesIO(response.content)
-                c.drawImage(
-                    reportlab_image_from_stream(img_data),
-                    img_x,
-                    img_y,
-                    width=image_width,
-                    height=image_height,
-                    preserveAspectRatio=True,
-                    mask="auto",
-                )
-        except Exception as e:
-            logger.warning(f"Failed to add image to PDF: {e}")
+        if image_url:
+            try:
+                logger.info(f"Downloading image for PDF: {image_url}")
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get(image_url)
+                if response.status_code == 200:
+                    img_data = BytesIO(response.content)
+                    c.drawImage(
+                        reportlab_image_from_stream(img_data),
+                        img_x,
+                        img_y,
+                        width=image_width,
+                        height=image_height,
+                        preserveAspectRatio=True,
+                        mask="auto",
+                    )
+                else:
+                    logger.warning(f"Failed to download image: status {response.status_code}")
+                    _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
+            except Exception as e:
+                logger.warning(f"Failed to add image to PDF: {e}")
+                _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
+        elif image_prompt:
             _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
-    elif image_prompt:
-        _draw_image_placeholder(c, image_prompt, img_x, img_y, image_width, image_height, theme)
 
 
 def _draw_image_placeholder(c, prompt, img_x, img_y, img_w, img_h, theme: dict):

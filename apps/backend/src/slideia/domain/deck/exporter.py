@@ -9,7 +9,7 @@ from io import BytesIO
 import httpx
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.util import Inches, Pt
 from slideia.core.logging import get_logger
 from slideia.domain.deck.services import create_minimal_template
@@ -134,11 +134,33 @@ async def export_slides(input_path: str, output_path: str):
             title_para.font.color.rgb = font_color
         title_para.alignment = PP_ALIGN.LEFT
 
-        # Add content text box below title
-        content_left = Inches(0.5)
-        content_top = Inches(1.5)
-        content_width = Inches(6)
-        content_height = Inches(5)
+        # Get slide layout (default to "bullets" for backward compatibility)
+        layout = s.get("layout", "bullets")
+        if not layout:
+            layout = "bullets"
+
+        # Determine if slide has an image (only bullets layout uses images)
+        image_path = s.get("image_path")
+        image_url = s.get("image_url")
+        has_image = (bool(image_url) or bool(image_path)) and layout == "bullets"
+
+        # Position and size the content text box dynamically to prevent overlap with the image slot
+        if has_image:
+            # Side-by-side layout: text content on the left
+            content_left = Inches(0.8)
+            content_top = Inches(1.8)
+            content_width = Inches(5.5)
+            content_height = Inches(4.5)
+        else:
+            # Full-width layout
+            content_left = Inches(1.0)
+            content_top = Inches(1.8)
+            content_width = Inches(8.0)
+            content_height = Inches(4.5)
+
+        if layout in ("statement", "big_number"):
+            content_top = Inches(2.2)
+            content_height = Inches(3.5)
 
         content_box = content_slide.shapes.add_textbox(
             content_left, content_top, content_width, content_height
@@ -150,6 +172,10 @@ async def export_slides(input_path: str, output_path: str):
         text_frame.margin_top = Inches(0.1)
         text_frame.margin_bottom = Inches(0.1)
 
+        # Center vertically for layout-specific text frames
+        if layout in ("statement", "big_number"):
+            text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+
         # Get summary - SAFE EXTRACTION
         summary = s.get("summary", "")
         if not isinstance(summary, str):
@@ -157,68 +183,223 @@ async def export_slides(input_path: str, output_path: str):
             summary = str(summary) if summary else ""
         summary = summary.strip()
 
-        # Add summary if present
-        if summary:
-            summary_lines = summary.split("\n")
-            for i, line in enumerate(summary_lines):
-                if i == 0:
+        if layout == "bullets":
+            has_summary_text = False
+            # Add summary if present
+            if summary:
+                summary_lines = summary.split("\n")
+                for i, line in enumerate(summary_lines):
+                    if i == 0:
+                        p = text_frame.paragraphs[0]
+                        p.text = line.strip()
+                    else:
+                        p = text_frame.add_paragraph()
+                        p.text = line.strip()
+
+                p.level = 0
+                p.font.size = Pt(14)
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
+                p.alignment = PP_ALIGN.LEFT
+                has_summary_text = True
+
+            # Get bullets - SAFE EXTRACTION
+            bullets = s.get("bullets", [])
+            if not isinstance(bullets, list):
+                logger.warning(
+                    f"Warning: bullets is {type(bullets)}, expected list. Converting.",
+                )
+                if isinstance(bullets, str):
+                    bullets = [b.strip() for b in bullets.splitlines() if b.strip()]
+                else:
+                    bullets = []
+
+            # Add bullets
+            for i, bullet_item in enumerate(bullets):
+                # Ensure bullet is a string
+                if not isinstance(bullet_item, str):
+                    logger.warning(f"Warning: bullet {i} is {type(bullet_item)}, converting to str")
+                    bullet_text = str(bullet_item)
+                else:
+                    bullet_text = bullet_item
+
+                # Create new paragraph for each bullet
+                if i == 0 and not has_summary_text:
                     p = text_frame.paragraphs[0]
-                    p.text = line.strip()
                 else:
                     p = text_frame.add_paragraph()
-                    p.text = line.strip()
 
-            p.level = 0
-            p.font.size = Pt(14)
-            p.font.name = font_name
-            if font_color:
-                p.font.color.rgb = font_color
-            p.space_after = Pt(12) if i == len(summary_lines) - 1 else Pt(0)
-            p.alignment = PP_ALIGN.LEFT
+                # Add bullet text
+                clean_text = bullet_text.strip()
+                if not clean_text.startswith("•") and not clean_text.startswith("-"):
+                    p.text = f"• {clean_text}"
+                else:
+                    p.text = clean_text
 
-        # Get bullets - SAFE EXTRACTION
-        bullets = s.get("bullets", [])
-        if not isinstance(bullets, list):
-            logger.warning(
-                f"Warning: bullets is {type(bullets)}, expected list. Converting.",
-            )
-            if isinstance(bullets, str):
-                # If it's a string, split by newlines or use as single item
-                bullets = [b.strip() for b in bullets.splitlines() if b.strip()]
-            else:
-                bullets = []
+                # Style bullet paragraph
+                p.level = 0
+                p.font.size = Pt(16)
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.space_after = Pt(8)
+                p.alignment = PP_ALIGN.LEFT
+                p.font.bold = False
 
-        # Add bullets
-        for i, bullet_item in enumerate(bullets):
-            # Ensure bullet is a string
-            if not isinstance(bullet_item, str):
-                logger.warning(f"Warning: bullet {i} is {type(bullet_item)}, converting to str")
-                bullet_text = str(bullet_item)
-            else:
-                bullet_text = bullet_item
+        elif layout == "statement":
+            statement = s.get("statement", "")
+            if not isinstance(statement, str):
+                statement = str(statement) if statement else ""
+            statement = statement.strip()
 
-            # Create new paragraph for each bullet
-            if i == 0 and not summary:
+            if not statement:
+                statement = summary
+
+            if statement:
                 p = text_frame.paragraphs[0]
-            else:
-                p = text_frame.add_paragraph()
+                p.text = f"“{statement}”"
+                p.level = 0
+                p.font.size = Pt(40)
+                p.font.italic = True
+                p.font.bold = True
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.alignment = PP_ALIGN.CENTER
 
-            # Add bullet text
-            clean_text = bullet_text.strip()
-            if not clean_text.startswith("•") and not clean_text.startswith("-"):
-                p.text = f"• {clean_text}"
-            else:
-                p.text = clean_text
+        elif layout == "big_number":
+            big_number = s.get("big_number", "")
+            if not isinstance(big_number, str):
+                big_number = str(big_number) if big_number else ""
+            big_number = big_number.strip()
 
-            # Style bullet paragraph
-            p.level = 0
-            p.font.size = Pt(16)
-            p.font.name = font_name
+            big_number_context = s.get("big_number_context", "")
+            if not isinstance(big_number_context, str):
+                big_number_context = str(big_number_context) if big_number_context else ""
+            big_number_context = big_number_context.strip()
+
+            if not big_number:
+                big_number = "50%"
+                big_number_context = summary or "No context provided"
+
+            p_num = text_frame.paragraphs[0]
+            p_num.text = big_number
+            p_num.level = 0
+            p_num.font.size = Pt(100)
+            p_num.font.bold = True
+            p_num.font.name = font_name
             if font_color:
-                p.font.color.rgb = font_color
-            p.space_after = Pt(8)
-            p.alignment = PP_ALIGN.LEFT
-            p.font.bold = False
+                p_num.font.color.rgb = font_color
+            p_num.alignment = PP_ALIGN.CENTER
+            p_num.space_after = Pt(8)
+
+            if big_number_context:
+                p_ctx = text_frame.add_paragraph()
+                p_ctx.text = big_number_context
+                p_ctx.level = 0
+                p_ctx.font.size = Pt(24)
+                p_ctx.font.bold = False
+                p_ctx.font.name = font_name
+                if font_color:
+                    p_ctx.font.color.rgb = font_color
+                p_ctx.alignment = PP_ALIGN.CENTER
+
+        elif layout == "two_column":
+            col_left_title = (s.get("column_left_title") or "").strip()
+            col_left = s.get("column_left") or []
+            col_right_title = (s.get("column_right_title") or "").strip()
+            col_right = s.get("column_right") or []
+
+            col_w = Inches(4.2)
+            col_h = Inches(4.2)
+            col_top = Inches(1.9)
+
+            for col_x, col_title, col_items in [
+                (Inches(0.5), col_left_title, col_left),
+                (Inches(5.0), col_right_title, col_right),
+            ]:
+                col_box = content_slide.shapes.add_textbox(col_x, col_top, col_w, col_h)
+                tf = col_box.text_frame
+                tf.word_wrap = True
+
+                if col_title:
+                    p_title = tf.paragraphs[0]
+                    p_title.text = col_title.upper()
+                    p_title.font.size = Pt(13)
+                    p_title.font.bold = True
+                    p_title.font.name = font_name
+                    if font_color:
+                        p_title.font.color.rgb = font_color
+                    p_title.alignment = PP_ALIGN.LEFT
+                    p_title.space_after = Pt(6)
+
+                for i, item in enumerate(col_items):
+                    if not isinstance(item, str):
+                        item = str(item)
+                    p = tf.add_paragraph() if (col_title or i > 0) else tf.paragraphs[0]
+                    clean = item.strip()
+                    p.text = f"\u25aa {clean}" if not clean.startswith(("\u25aa", "\u2022", "-")) else clean
+                    p.font.size = Pt(15)
+                    p.font.name = font_name
+                    if font_color:
+                        p.font.color.rgb = font_color
+                    p.alignment = PP_ALIGN.LEFT
+                    p.space_after = Pt(5)
+
+        elif layout == "steps":
+            steps = s.get("steps") or []
+            steps_box = content_slide.shapes.add_textbox(Inches(1.2), Inches(2.0), Inches(7.6), Inches(4.0))
+            tf = steps_box.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+            for i, step in enumerate(steps):
+                if not isinstance(step, str):
+                    step = str(step)
+                p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+                p.text = f"{i + 1}.  {step.strip()}"
+                p.font.size = Pt(19)
+                p.font.bold = i == 0
+                p.font.name = font_name
+                if font_color:
+                    p.font.color.rgb = font_color
+                p.alignment = PP_ALIGN.LEFT
+                p.space_after = Pt(10)
+
+        elif layout == "quote":
+            quote_text = (s.get("quote_text") or "").strip()
+            quote_attribution = (s.get("quote_attribution") or "").strip()
+            if not quote_text:
+                quote_text = summary
+
+            quote_box = content_slide.shapes.add_textbox(Inches(1.0), Inches(2.0), Inches(8.0), Inches(3.5))
+            tf = quote_box.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+            if quote_text:
+                p_q = tf.paragraphs[0]
+                p_q.text = f"\u201c{quote_text}\u201d"
+                p_q.font.size = Pt(28)
+                p_q.font.italic = True
+                p_q.font.name = font_name
+                if font_color:
+                    p_q.font.color.rgb = font_color
+                p_q.alignment = PP_ALIGN.CENTER
+                p_q.space_after = Pt(14)
+
+            if quote_attribution:
+                p_attr = tf.add_paragraph() if quote_text else tf.paragraphs[0]
+                p_attr.text = quote_attribution
+                p_attr.font.size = Pt(14)
+                p_attr.font.italic = False
+                p_attr.font.bold = False
+                p_attr.font.name = font_name
+                if font_color:
+                    p_attr.font.color.rgb = font_color
+                p_attr.alignment = PP_ALIGN.CENTER
 
         # Get notes - SAFE EXTRACTION
         notes = s.get("notes", "")
@@ -244,58 +425,60 @@ async def export_slides(input_path: str, output_path: str):
 
         # Image dimensions and position — right-column layout
         # Start low enough to clear the title bar and give breathing room
-        img_left = Inches(6.8)
-        img_top = Inches(2.5)
-        img_width = Inches(2.7)
-        img_height = Inches(1.8)
+        if has_image:
+            img_left = Inches(6.8)
+            img_width = Inches(2.7)
+            img_height = Inches(2.2)
+            # Center the image vertically within the content area (1.8 to 6.3)
+            img_top = Inches(1.8) + (Inches(4.5) - img_height) / 2
 
-        pic = None
+            pic = None
 
-        # Try to fetch image URL first
-        if image_url:
-            try:
-                logger.info(f"Downloading image from {image_url}...")
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.get(image_url)
-                if response.status_code == 200:
-                    image_stream = BytesIO(response.content)
+            # Try to fetch image URL first
+            if image_url:
+                try:
+                    logger.info(f"Downloading image from {image_url}...")
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.get(image_url)
+                    if response.status_code == 200:
+                        image_stream = BytesIO(response.content)
+                        pic = content_slide.shapes.add_picture(
+                            image_stream, img_left, img_top, width=img_width, height=img_height
+                        )
+                    else:
+                        logger.warning(f"Failed to download image: status {response.status_code}")
+                except Exception as e:
+                    logger.warning(f"Error downloading image: {e}")
+
+            # If no URL or download failed, try local path
+            if not pic and image_path and os.path.exists(image_path):
+                try:
                     pic = content_slide.shapes.add_picture(
-                        image_stream, img_left, img_top, width=img_width, height=img_height
+                        image_path, img_left, img_top, width=img_width, height=img_height
                     )
-                else:
-                    logger.warning(f"Failed to download image: status {response.status_code}")
-            except Exception as e:
-                logger.warning(f"Error downloading image: {e}")
+                except Exception as e:
+                    logger.warning(f"Image insert failed: {e}")
 
-        # If no URL or download failed, try local path
-        if not pic and image_path and os.path.exists(image_path):
-            try:
-                pic = content_slide.shapes.add_picture(
-                    image_path, img_left, img_top, width=img_width, height=img_height
-                )
-            except Exception as e:
-                logger.warning(f"Image insert failed: {e}")
+            # Add alt text if picture was created
+            if pic and image_prompt:
+                try:
+                    if hasattr(pic, "alt_text"):
+                        pic.alt_text = image_prompt
+                except Exception as e:
+                    logger.warning(f"Alt text assignment failed: {e}")
 
-        # Add alt text if picture was created
-        if pic and image_prompt:
-            try:
-                if hasattr(pic, "alt_text"):
-                    pic.alt_text = image_prompt
-            except Exception as e:
-                logger.warning(f"Alt text assignment failed: {e}")
+            # Fallback: if no picture was created, create a placeholder box
+            if not pic and image_prompt:
+                logger.info("Using placeholder shape for image.")
+                textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, img_height)
 
-        # Fallback: if no picture was created, create a placeholder box
-        if not pic and image_prompt:
-            logger.info("Using placeholder shape for image.")
-            textbox = content_slide.shapes.add_textbox(img_left, img_top, img_width, img_height)
-
-            textbox_frame = textbox.text_frame
-            textbox_frame.text = f"[Image: {image_prompt}]"
-            textbox_frame.word_wrap = True
-            p = textbox_frame.paragraphs[0]
-            p.font.size = Pt(10)
-            p.font.italic = True
-            p.alignment = PP_ALIGN.CENTER
+                textbox_frame = textbox.text_frame
+                textbox_frame.text = f"[Image: {image_prompt}]"
+                textbox_frame.word_wrap = True
+                p = textbox_frame.paragraphs[0]
+                p.font.size = Pt(10)
+                p.font.italic = True
+                p.alignment = PP_ALIGN.CENTER
 
     # Add References slide if citations exist
     citations = data.get("citations")

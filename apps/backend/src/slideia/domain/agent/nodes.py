@@ -49,11 +49,28 @@ USER INSTRUCTION:
 
 INSTRUCTIONS:
 1. Apply the user's requested edit precisely.
-2. If they ask to add a slide, insert it in the logical position with a title, 3-5 bullets (concise, 10-12 words max), speaker notes, and an image prompt.
+2. If they ask to add a slide, insert it in the logical position. Choose the most appropriate layout:
+   - "bullets": standard slide with 3-5 bullet points (default, use for general/detailed content)
+   - "statement": a single bold statement, quote or takeaway (use for openers, closers, or key focus slides)
+   - "big_number": focuses on one key statistic or metric with context (use when data/stats are the primary highlight)
 3. If they ask to modify a slide (e.g., update slide 2), change only the target slide while leaving other slides intact.
-4. If they ask to change the overall tone, theme, palette, or font, update the appropriate fields.
-5. If they ask to delete a slide, remove it.
-6. Ensure the result is a complete, valid slide deck matching the schema.
+4. If they ask to change a slide's layout (e.g., "make slide 3 a big statement"), update its "layout" and adjust the fields accordingly (e.g., clear "bullets" and populate "statement").
+5. If they ask to change the overall tone, theme, palette, or font, update the appropriate fields.
+6. If they ask to delete a slide, remove it.
+7. Ensure the result is a complete, valid slide deck matching the schema.
+
+LAYOUT CONTENT REQUIREMENTS:
+Depending on each slide's "layout", generate the corresponding fields:
+- For layout "bullets":
+  - "bullets": A list of 3-5 concise, actionable bullet points (max 10-12 words each).
+  - "statement": null, "big_number": null, "big_number_context": null
+- For layout "statement":
+  - "statement": A single bold, high-impact statement, key takeaway, or quote (1 sentence, max 15 words) summarizing the core message.
+  - "bullets": [], "big_number": null, "big_number_context": null
+- For layout "big_number":
+  - "big_number": A single key statistic, percentage, or metric (e.g., "73%", "5.2 Billion", "$10M+").
+  - "big_number_context": A short phrase/sentence providing the context for this number (max 8-10 words).
+  - "bullets": [], "statement": null
 
 OUTPUT FORMAT (valid JSON only):
 {{
@@ -64,7 +81,11 @@ OUTPUT FORMAT (valid JSON only):
   "slides": [
     {{
       "title": "Slide Title",
+      "layout": "bullets" | "statement" | "big_number",
       "bullets": ["Bullet 1", "Bullet 2"],
+      "statement": "Optional bold statement",
+      "big_number": "Optional number",
+      "big_number_context": "Optional context for number",
       "notes": "Speaker notes for presentation",
       "image_prompt": "Image prompt describing a slide graphic",
       "citations": ["Source 1"]

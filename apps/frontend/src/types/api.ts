@@ -53,6 +53,7 @@ export interface ProposeOutlineResponse {
   slides: Array<{
     title: string;
     summary: string;
+    layout?: SlideLayout;
     citations?: string[];
   }>;
   palette?: string[];
@@ -68,11 +69,30 @@ export interface GenerateDeckRequest {
   theme_preset?: ThemePreset;
 }
 
+export type SlideLayout =
+  | "bullets"
+  | "statement"
+  | "big_number"
+  | "two_column"
+  | "steps"
+  | "quote";
+
 export interface SlideContent {
   bullets: string[];
   notes: string;
   image_prompt: string;
   theme?: Record<string, string>;
+  layout?: SlideLayout;
+  statement?: string;
+  big_number?: string;
+  big_number_context?: string;
+  column_left_title?: string;
+  column_left?: string[];
+  column_right_title?: string;
+  column_right?: string[];
+  steps?: string[];
+  quote_text?: string;
+  quote_attribution?: string;
 }
 
 export interface GenerateDeckResponse {
@@ -98,6 +118,7 @@ export interface RegenerateSlideRequest {
   title: string;
   summary: string;
   instruction?: string;
+  layout?: SlideLayout;
 }
 
 export type RegenerateSlideResponse = SlideContent;
@@ -111,6 +132,17 @@ export interface SlideExportItem {
   notes: string;
   image_prompt: string;
   theme?: Record<string, string>;
+  layout?: SlideLayout;
+  statement?: string;
+  big_number?: string;
+  big_number_context?: string;
+  column_left_title?: string;
+  column_left?: string[];
+  column_right_title?: string;
+  column_right?: string[];
+  steps?: string[];
+  quote_text?: string;
+  quote_attribution?: string;
 }
 
 export interface FullDeckExportRequest {
