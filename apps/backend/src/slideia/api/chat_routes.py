@@ -7,7 +7,6 @@ response back token-by-token as Server-Sent Events.
 
 import asyncio
 import json
-from io import BytesIO
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
@@ -16,6 +15,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from slideia.api.chat_schemas import ChatRequest
 from slideia.core.logging import get_logger
 from slideia.domain.agent.graph import graph
+from slideia.services.ingest import extract_file_text, chunk_document_text
 
 logger = get_logger(__name__)
 
@@ -51,32 +51,6 @@ response. Reference specific details from the files when relevant."""
 # ── File text extraction ─────────────────────────────────────────────────
 
 
-def _extract_text_plain(content: bytes) -> str:
-    """Decode plain-text files (txt, md, csv, json)."""
-    return content.decode("utf-8", errors="replace")
-
-
-def _extract_text_pdf(content: bytes) -> str:
-    """Extract text from a PDF using PyPDF2."""
-    from PyPDF2 import PdfReader
-
-    reader = PdfReader(BytesIO(content))
-    pages: list[str] = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            pages.append(text)
-    return "\n\n".join(pages)
-
-
-def _extract_text_docx(content: bytes) -> str:
-    """Extract text from a .docx file using python-docx."""
-    from docx import Document
-
-    doc = Document(BytesIO(content))
-    return "\n\n".join(para.text for para in doc.paragraphs if para.text)
-
-
 async def _read_file_text(upload: UploadFile) -> str:
     """Read an UploadFile and return its text content.
 
@@ -103,13 +77,14 @@ async def _read_file_text(upload: UploadFile) -> str:
 
     ext = ALLOWED_CONTENT_TYPES[content_type]
 
-    if ext == "pdf":
-        return _extract_text_pdf(raw)
-    if ext == "docx":
-        return _extract_text_docx(raw)
-
-    # txt, md, csv, json — all are plain text
-    return _extract_text_plain(raw)
+    try:
+        return extract_file_text(raw, ext)
+    except Exception as exc:
+        logger.error(f"Failed to parse file '{upload.filename}': {exc}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Failed to extract text from file '{upload.filename}': {exc}",
+        )
 
 
 # ── SSE helpers ──────────────────────────────────────────────────────────
@@ -175,9 +150,10 @@ async def chat_stream(
             )
 
         if total_chars + len(text) > MAX_CHARACTER_LIMIT:
-            allowed_len = MAX_CHARACTER_LIMIT - total_chars
-            text = text[:allowed_len]
-            truncated = True
+            remaining_limit = MAX_CHARACTER_LIMIT - total_chars
+            text, file_truncated = chunk_document_text(text, max_chars=remaining_limit)
+            if file_truncated:
+                truncated = True
 
         total_chars += len(text)
         file_contexts.append(f"--- File: {upload.filename} ---\n{text}\n--- End of {upload.filename} ---")
