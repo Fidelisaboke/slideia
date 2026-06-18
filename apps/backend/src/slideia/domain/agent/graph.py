@@ -34,11 +34,8 @@ def decide_validation(state: AgentState) -> str:
         # Loop back to generate/refine
         intent = state.get("intent")
         if intent == "CREATE_DECK":
-            # Increment retry count
-            state["retry_count"] = retry_count + 1
             return "draft_slides"
         elif intent == "EDIT_DECK":
-            state["retry_count"] = retry_count + 1
             return "refine_deck"
 
     return END

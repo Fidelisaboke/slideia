@@ -1,5 +1,7 @@
 from langgraph.graph import END
+import pytest
 from slideia.domain.agent.graph import route_intent, decide_validation, compile_workflow
+from slideia.domain.agent.nodes import validate_node
 from slideia.domain.agent.state import AgentState
 
 
@@ -79,3 +81,61 @@ def test_graph_compilation():
     assert "refine_deck" in node_names
     assert "validate" in node_names
     assert "general_chat" in node_names
+
+
+@pytest.mark.asyncio
+async def test_validate_node():
+    # 1. State with no deck
+    state_no_deck: AgentState = {
+        "messages": [],
+        "topic": "AI",
+        "audience": "Developers",
+        "tone": "professional",
+        "slide_count": 3,
+        "theme_preset": "purple_mint",
+        "deck": None,
+        "prompt": "Create a deck",
+        "file_context": "",
+        "intent": "CREATE_DECK",
+        "instruction": None,
+        "error": None,
+        "retry_count": 0,
+    }
+    res = await validate_node(state_no_deck, None)
+    assert res["error"] == "No slides found in the generated deck."
+    assert res["retry_count"] == 1
+
+    # 2. State with valid deck
+    state_valid_deck: AgentState = {
+        **state_no_deck,
+        "deck": {
+            "slides": [
+                {
+                    "title": "Slide 1",
+                    "layout": "bullets",
+                    "bullets": ["Bullet 1", "Bullet 2"],
+                }
+            ]
+        },
+        "retry_count": 1,
+    }
+    res = await validate_node(state_valid_deck, None)
+    assert res["error"] is None
+    assert "retry_count" not in res
+
+    # 3. State with invalid slide (missing title)
+    state_invalid_deck: AgentState = {
+        **state_no_deck,
+        "deck": {
+            "slides": [
+                {
+                    "layout": "bullets",
+                    "bullets": ["Bullet 1"],
+                }
+            ]
+        },
+        "retry_count": 2,
+    }
+    res = await validate_node(state_invalid_deck, None)
+    assert "missing a title" in res["error"]
+    assert res["retry_count"] == 3

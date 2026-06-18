@@ -323,19 +323,28 @@ async def validate_node(state: AgentState, config: RunnableConfig) -> dict:
     logger.info("Node: validate_node")
 
     deck = state.get("deck")
+    error_msg = None
+
     if not deck or "slides" not in deck:
-        return {"error": "No slides found in the generated deck."}
+        error_msg = "No slides found in the generated deck."
+    else:
+        slides = deck["slides"]
+        if not slides:
+            error_msg = "The slide list is empty."
+        else:
+            # Verify formatting constraints on slides
+            for idx, s in enumerate(slides):
+                if not s.get("title"):
+                    error_msg = f"Slide {idx + 1} is missing a title."
+                    break
+                if not isinstance(s.get("bullets"), list):
+                    error_msg = f"Slide {idx + 1} ('{s.get('title')}') bullets must be a list of strings."
+                    break
 
-    slides = deck["slides"]
-    if not slides:
-        return {"error": "The slide list is empty."}
-
-    # Verify formatting constraints on slides
-    for idx, s in enumerate(slides):
-        if not s.get("title"):
-            return {"error": f"Slide {idx + 1} is missing a title."}
-        if not isinstance(s.get("bullets"), list):
-            return {"error": f"Slide {idx + 1} ('{s.get('title')}') bullets must be a list of strings."}
+    if error_msg:
+        retry_count = state.get("retry_count", 0) + 1
+        logger.warning(f"Validation failed (retry {retry_count}/3): {error_msg}")
+        return {"error": error_msg, "retry_count": retry_count}
 
     # If it passed validation, clear error
     return {"error": None}
