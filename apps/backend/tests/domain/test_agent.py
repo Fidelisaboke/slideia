@@ -36,6 +36,38 @@ def test_route_intent():
     state_unknown: AgentState = {**state_create, "intent": "UNKNOWN"}
     assert route_intent(state_unknown) == "general_chat"
 
+    # Test routing to summarize_context when file_context is present and not summarized
+    state_with_file: AgentState = {**state_create, "file_context": "Some raw pdf text content"}
+    assert route_intent(state_with_file) == "summarize_context"
+
+    # Test routing past summarize_context if already summarized
+    state_summarized: AgentState = {**state_with_file, "summarized_context": "summary"}
+    assert route_intent(state_summarized) == "propose_outline"
+
+
+def test_route_post_summarize():
+    from slideia.domain.agent.graph import route_post_summarize
+
+    state: AgentState = {
+        "messages": [],
+        "topic": "AI",
+        "audience": "Developers",
+        "tone": "professional",
+        "slide_count": 3,
+        "theme_preset": "purple_mint",
+        "deck": None,
+        "prompt": "Create a deck",
+        "file_context": "file",
+        "summarized_context": "summary",
+        "intent": "CREATE_DECK",
+        "instruction": None,
+        "error": None,
+        "retry_count": 0,
+    }
+    assert route_post_summarize(state) == "propose_outline"
+    assert route_post_summarize({**state, "intent": "EDIT_DECK"}) == "refine_deck"
+    assert route_post_summarize({**state, "intent": "CHAT"}) == "general_chat"
+
 
 def test_decide_validation():
     state: AgentState = {
@@ -76,6 +108,7 @@ def test_graph_compilation():
     # Verify nodes exist in compiled graph
     node_names = [node for node in workflow.nodes.keys()]
     assert "classify_intent" in node_names
+    assert "summarize_context" in node_names
     assert "propose_outline" in node_names
     assert "draft_slides" in node_names
     assert "refine_deck" in node_names

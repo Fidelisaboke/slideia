@@ -197,3 +197,15 @@ async def test_llm_draft_slides_batch(llm):
         mock_call.assert_called_once()
         args, kwargs = mock_call.call_args
         assert kwargs.get("max_tokens") == 4096
+
+
+@pytest.mark.asyncio
+async def test_llm_summarize_document(llm):
+    with patch.object(llm, "_call", new_callable=AsyncMock) as mock_call:
+        mock_call.return_value = "This is a summary of the document."
+        result = await llm.summarize_document("Long source material...")
+        assert result == "This is a summary of the document."
+        mock_call.assert_called_once()
+        args, kwargs = mock_call.call_args
+        assert kwargs.get("max_tokens") == 2048
+        assert kwargs.get("json_mode") is False

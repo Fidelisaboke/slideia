@@ -162,10 +162,11 @@ async def propose_outline_node(state: AgentState, config: RunnableConfig) -> dic
     slide_count = state.get("slide_count") or 5
     theme_preset = state.get("theme_preset") or "Default"
 
-    # Inject file context if present
+    # Inject file context if present (prioritize summarized_context if available)
     theme_instruction = theme_preset
-    if state.get("file_context"):
-        theme_instruction += f"\n\nReference Material:\n{state['file_context']}"
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        theme_instruction += f"\n\nReference Material:\n{ref_material}"
 
     try:
         outline = await llm.propose_outline(
@@ -277,8 +278,9 @@ async def refine_deck_node(state: AgentState, config: RunnableConfig) -> dict:
     instruction = state.get("instruction") or state["prompt"]
 
     file_block = ""
-    if state.get("file_context"):
-        file_block = f"USER UPLOADED FILE CONTEXT:\n{state['file_context']}\n"
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        file_block = f"USER UPLOADED FILE CONTEXT:\n{ref_material}\n"
 
     prompt = REFINEMENT_PROMPT_TEMPLATE.format(
         topic=state.get("topic", "Presentation"),
@@ -368,8 +370,9 @@ async def general_chat_node(state: AgentState, config: RunnableConfig) -> dict:
         messages.append({"role": role, "content": msg.content})
 
     # File context
-    if state.get("file_context"):
-        messages.append({"role": "user", "content": f"Context files:\n{state['file_context']}"})
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        messages.append({"role": "user", "content": f"Context files:\n{ref_material}"})
 
     # Current prompt
     messages.append({"role": "user", "content": state["prompt"]})
@@ -391,3 +394,28 @@ async def general_chat_node(state: AgentState, config: RunnableConfig) -> dict:
         return {
             "messages": [AIMessage(content=err_msg)],
         }
+
+
+async def summarize_context_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Summarizes user-provided documents if they exist and haven't been summarized yet."""
+    logger.info("Node: summarize_context_node")
+
+    file_context = state.get("file_context")
+    if not file_context:
+        return {"summarized_context": None}
+
+    await push_to_queue(
+        config,
+        {
+            "status": "Summarizing uploaded documents...",
+            "token": "Extracting key insights and summarizing files... ",
+        },
+    )
+
+    try:
+        summary = await llm.summarize_document(file_context)
+        await push_to_queue(config, {"token": "✓ Summarized reference material.\n"})
+        return {"summarized_context": summary}
+    except Exception as e:
+        logger.error(f"Context summarization failed: {e}")
+        return {"summarized_context": None}

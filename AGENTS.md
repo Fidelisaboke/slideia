@@ -33,7 +33,7 @@ Before writing any code, verify internally:
 
 - **Framework**: FastAPI + `uv` for dependency management.
 - **LLM**: OpenRouter integration found in `infra/openrouter.py`. All LLM responses MUST be valid JSON.
-- **Testing**: Use `uv run --group test pytest`. Ensure 90%+ coverage on `api/routes.py`.
+- **Testing**: Use `PYTHONPATH=src uv run --group test pytest`. Ensure 90%+ coverage on `api/routes.py`.
 - **Exports**: `python-pptx` used for PowerPoint generation. The export endpoint accepts a full user-edited state.
 
 ## Turborepo Configuration
@@ -73,7 +73,7 @@ Commit messages follow a conventional commit structure:
 - test: Adding missing tests or correcting existing tests
 - chore: Changes to the build process or auxiliary tools
 
-*IMPORTANT:* Ensure you mention the agent and model that authored the commit as the footer of the commit message.
+_IMPORTANT:_ Ensure you mention the agent and model that authored the commit as the footer of the commit message.
 
 ### Commit Message Format
 

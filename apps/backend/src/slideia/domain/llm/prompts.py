@@ -266,3 +266,18 @@ IMAGE_GENERATION_USER_PROMPT = """Generate a presentation slide based on the fol
 {image_prompt}
 
 """
+
+
+SUMMARIZATION_PROMPT = """You are a professional research assistant. Your task is to summarize the following source materials to help create a presentation deck.
+
+Create a highly structured summary including:
+1. Executive Summary: Core message and main takeaway of the documents (1-2 sentences).
+2. Key Themes: List 3-5 main themes, each with a brief explanation (2-3 sentences).
+3. Critical Data & Statistics: List any key metrics, dates, percentages, or figures mentioned in the text.
+4. Key Takeaways/Quotes: List notable quotes or essential statements that could be featured on individual slides.
+
+Keep the total summary size between 1000 and 2000 tokens (approximately 700 to 1500 words).
+
+SOURCE MATERIAL:
+{text}
+"""

@@ -7,6 +7,7 @@ from slideia.domain.agent.nodes import (
     general_chat_node,
     propose_outline_node,
     refine_deck_node,
+    summarize_context_node,
     validate_node,
 )
 from slideia.domain.agent.state import AgentState
@@ -15,7 +16,21 @@ from slideia.domain.agent.state import AgentState
 
 
 def route_intent(state: AgentState) -> str:
-    """Routes to outline generation, refinement, or general chat based on intent."""
+    """Routes to summarization or directly to the target node based on intent."""
+    if state.get("file_context") and not state.get("summarized_context"):
+        return "summarize_context"
+
+    intent = state.get("intent")
+    if intent == "CREATE_DECK":
+        return "propose_outline"
+    elif intent == "EDIT_DECK":
+        return "refine_deck"
+    else:
+        return "general_chat"
+
+
+def route_post_summarize(state: AgentState) -> str:
+    """Routes to outline generation, refinement, or general chat after summarization."""
     intent = state.get("intent")
     if intent == "CREATE_DECK":
         return "propose_outline"
@@ -50,6 +65,7 @@ def compile_workflow():
 
     # Add all execution nodes
     workflow.add_node("classify_intent", classify_intent_node)
+    workflow.add_node("summarize_context", summarize_context_node)
     workflow.add_node("propose_outline", propose_outline_node)
     workflow.add_node("draft_slides", draft_slides_node)
     workflow.add_node("refine_deck", refine_deck_node)
@@ -63,6 +79,18 @@ def compile_workflow():
     workflow.add_conditional_edges(
         "classify_intent",
         route_intent,
+        {
+            "summarize_context": "summarize_context",
+            "propose_outline": "propose_outline",
+            "refine_deck": "refine_deck",
+            "general_chat": "general_chat",
+        },
+    )
+
+    # Define Conditional Edge from Summarization completion
+    workflow.add_conditional_edges(
+        "summarize_context",
+        route_post_summarize,
         {
             "propose_outline": "propose_outline",
             "refine_deck": "refine_deck",

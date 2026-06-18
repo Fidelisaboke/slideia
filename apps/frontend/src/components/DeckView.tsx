@@ -64,7 +64,7 @@ function buildEditableSlides(deck: GenerateDeckResponse): EditableSlideData[] {
   return deck.slides.map((slide, i) => ({
     title: deck.outline.slides[i]?.title ?? `Slide ${i + 1}`,
     summary: deck.outline.slides[i]?.summary ?? "",
-    bullets: [...slide.bullets],
+    bullets: slide.bullets ? [...slide.bullets] : [],
     notes: slide.notes ?? "",
     image_prompt: slide.image_prompt ?? "",
     theme: slide.theme,

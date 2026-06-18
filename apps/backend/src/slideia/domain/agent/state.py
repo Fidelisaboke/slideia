@@ -29,6 +29,9 @@ class AgentState(TypedDict):
     # Context extracted from uploaded files
     file_context: str
 
+    # Condensed summary of the file_context to fit in prompt limits
+    summarized_context: str | None
+
     # Intent classified by the intent classifier node:
     # "CREATE_DECK" | "EDIT_DECK" | "CHAT" | "UNKNOWN"
     intent: str
