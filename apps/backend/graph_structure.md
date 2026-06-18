@@ -33,6 +33,7 @@ graph TD;
 	summarize_context -.-> refine_deck;
 	validate -.-> __end__;
 	validate -.-> draft_slides;
+	validate -.-> propose_outline;
 	validate -.-> refine_deck;
 	general_chat --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

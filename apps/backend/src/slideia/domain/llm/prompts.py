@@ -24,7 +24,7 @@ INSTRUCTIONS:
 OUTPUT FORMAT (valid JSON only):
 {{
   "title": "Presentation Title Here",
-  "theme_summary": "Description of the visual style and color palette based on {theme_instruction}",
+  "theme_summary": "Description of the visual style and color palette based on the theme preference",
   "palette": ["#Hex1", "#Hex2", "#Hex3"],
   "font": "Font Name (e.g., Aptos Display, Calibri, Inter)",
   "slides": [

@@ -49,6 +49,9 @@ def decide_validation(state: AgentState) -> str:
         # Loop back to generate/refine
         intent = state.get("intent")
         if intent == "CREATE_DECK":
+            deck = state.get("deck")
+            if not deck or not deck.get("outline"):
+                return "propose_outline"
             return "draft_slides"
         elif intent == "EDIT_DECK":
             return "refine_deck"
@@ -108,6 +111,7 @@ def compile_workflow():
         "validate",
         decide_validation,
         {
+            "propose_outline": "propose_outline",
             "draft_slides": "draft_slides",
             "refine_deck": "refine_deck",
             END: END,

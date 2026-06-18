@@ -89,9 +89,18 @@ def test_decide_validation():
     # No error -> END
     assert decide_validation(state) == END
 
-    # Error present, retry count < 3, intent is CREATE_DECK -> draft_slides
-    state_err_create = {**state, "error": "Some schema error", "retry_count": 0}
-    assert decide_validation(state_err_create) == "draft_slides"
+    # Error present, retry count < 3, intent is CREATE_DECK, deck/outline missing -> propose_outline
+    state_err_create_no_outline = {**state, "error": "Some schema error", "retry_count": 0}
+    assert decide_validation(state_err_create_no_outline) == "propose_outline"
+
+    # Error present, retry count < 3, intent is CREATE_DECK, outline present -> draft_slides
+    state_err_create_has_outline = {
+        **state,
+        "error": "Some schema error",
+        "retry_count": 0,
+        "deck": {"outline": {"slides": []}},
+    }
+    assert decide_validation(state_err_create_has_outline) == "draft_slides"
 
     # Error present, retry count < 3, intent is EDIT_DECK -> refine_deck
     state_err_edit = {**state, "error": "Some schema error", "retry_count": 1, "intent": "EDIT_DECK"}
