@@ -26,11 +26,16 @@ def _extract_json(text: str | None) -> str:
     # Try to find a JSON block in markdown, looking for first valid one
     matches = re.findall(r"```json\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
     for match in matches:
+        cleaned = match.strip()
         try:
-            json.loads(match.strip())
-            return match.strip()
+            json.loads(cleaned)
+            return cleaned
         except Exception:
-            continue
+            pass
+
+    # If we found markdown blocks but none were valid JSON, return the first one as a candidate
+    if matches:
+        return matches[0].strip()
 
     # Fallback: find the first { and last } which covers cases where the model
     # might add a preamble or conversational filler outside the JSON.
@@ -38,11 +43,7 @@ def _extract_json(text: str | None) -> str:
     end = text.rfind("}")
     if start != -1 and end != -1:
         candidate = text[start : end + 1].strip()
-        try:
-            json.loads(candidate)
-            return candidate
-        except Exception:
-            pass
+        return candidate
 
     return text.strip()
 

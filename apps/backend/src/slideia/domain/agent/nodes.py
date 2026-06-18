@@ -145,6 +145,21 @@ async def classify_intent_node(state: AgentState, config: RunnableConfig) -> dic
         }
     except Exception as e:
         logger.error(f"Intent classification failed: {e}")
+        # Fallback to CREATE_DECK if file context is present and no deck exists yet,
+        # or EDIT_DECK if a deck already exists. This avoids routing to general chat
+        # if the intent classifier fails for a presentation generation request.
+        if state.get("deck"):
+            logger.info("Fallback: Assuming EDIT_DECK since a deck already exists.")
+            return {
+                "intent": "EDIT_DECK",
+                "instruction": state.get("prompt"),
+            }
+        elif state.get("file_context"):
+            logger.info("Fallback: Assuming CREATE_DECK since file context is present.")
+            return {
+                "intent": "CREATE_DECK",
+                "instruction": state.get("prompt") or "Create a presentation",
+            }
         return {
             "intent": "CHAT",
             "instruction": None,
