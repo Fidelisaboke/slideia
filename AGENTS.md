@@ -73,14 +73,17 @@ Commit messages follow a conventional commit structure:
 - test: Adding missing tests or correcting existing tests
 - chore: Changes to the build process or auxiliary tools
 
-### Examples
+*IMPORTANT:* Ensure you mention the agent and model that authored the commit as the footer of the commit message.
 
-- `feat(api): add endpoint for generating full deck`
-- `fix(frontend): fix bug in slide editing`
-- `docs: add documentation for new endpoint`
-- `style: format code`
-- `test: add tests for new endpoint`
-- `chore: update dependencies`
+### Commit Message Format
+
+```
+<type>(<scope>): <description>
+
+<optional body - very brief summary; bullet points of changes made. Keep it concise!>
+
+Co-authored-by: <agent> - <model>
+```
 
 ## RESPONSE STRUCTURE
 
