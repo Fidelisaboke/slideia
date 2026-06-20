@@ -232,9 +232,13 @@ async def export_pptx(request: FullDeckExportRequest):
         logger.info(f"Exporting deck with {len(request.slides)} slides")
 
         # Prepare data for export from the user-provided state
+        # Prefer the LLM-generated title/subtitle; fall back to topic/audience
+        export_title = request.title or request.topic or "Untitled Presentation"
+        export_subtitle = request.subtitle or (f"For {request.audience}" if request.audience else "")
+
         deck_data = {
-            "title": request.topic,
-            "subtitle": f"For {request.audience}",
+            "title": export_title,
+            "subtitle": export_subtitle,
             "palette": request.palette or [],
             "font": request.font or "Calibri",
             "citations": request.citations or [],
@@ -332,9 +336,13 @@ async def export_pdf(request: FullDeckExportRequest):
         logger.info(f"Exporting deck to PDF with {len(request.slides)} slides")
 
         # Prepare data for export
+        # Prefer the LLM-generated title/subtitle; fall back to topic/audience
+        export_title = request.title or request.topic or "Untitled Presentation"
+        export_subtitle = request.subtitle or (f"For {request.audience}" if request.audience else "")
+
         deck_data = {
-            "title": request.topic,
-            "subtitle": f"For {request.audience}",
+            "title": export_title,
+            "subtitle": export_subtitle,
             "palette": request.palette or [],
             "font": request.font or "Calibri",
             "citations": request.citations or [],

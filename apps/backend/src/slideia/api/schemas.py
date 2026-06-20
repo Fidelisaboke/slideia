@@ -71,3 +71,6 @@ class FullDeckExportRequest(BaseModel):
     palette: list[str] | None = None
     font: str | None = None
     citations: list[str] | None = None
+    # LLM-generated presentation title/subtitle (preferred over topic/audience)
+    title: str | None = None
+    subtitle: str | None = None

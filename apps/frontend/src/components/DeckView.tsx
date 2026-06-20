@@ -263,6 +263,8 @@ export default function DeckView({
                 slides: exportSlides,
                 palette: themeMeta.palette,
                 font: themeMeta.font,
+                title: currentDeck.outline.title,
+                subtitle: audience ? `For ${audience}` : undefined,
               })
             : await apiClient.exportPdf({
                 topic,
@@ -270,6 +272,8 @@ export default function DeckView({
                 slides: exportSlides,
                 palette: themeMeta.palette,
                 font: themeMeta.font,
+                title: currentDeck.outline.title,
+                subtitle: audience ? `For ${audience}` : undefined,
               });
 
         const downloadUrl = apiClient.getDownloadUrl(response.download_url);
@@ -284,7 +288,7 @@ export default function DeckView({
         setExportingType(null);
       }
     },
-    [slides, topic, audience, themeMeta.palette, themeMeta.font],
+    [slides, topic, audience, currentDeck, themeMeta.palette, themeMeta.font],
   );
 
   return (
