@@ -8,7 +8,8 @@ PRESENTATION DETAILS:
 
 INSTRUCTIONS:
 1. Create a compelling presentation title that captures the main theme
-2. Design {slide_count} content slides (excluding title slide)
+2. Design {slide_count} content slides (excluding title slide).
+   CRITICAL: If "Reference Material" is present in the Theme Preference, you MUST base the outline titles and slide summaries strictly on the facts, themes, and data contained in the Reference Material. Do not use generic placeholders or generic knowledge.
 3. Each slide should have a clear, concise title (max 6 words)
 4. Each slide should have a brief summary (1-2 sentences describing the slide's purpose)
 5. Ensure logical flow between slides
@@ -183,6 +184,9 @@ PRESENTATION CONTEXT:
 - Topic: {topic}
 - Audience: {audience}
 - Theme/Branding: {theme_instruction}
+
+CRITICAL DRAFTING INSTRUCTIONS:
+- If "Reference Material" is present in the Theme/Branding section, you MUST use it as the primary source of truth. Draft all slide bullet points, metrics, steps, statements, and quotes directly from the facts and data in the Reference Material. Do not make up generic facts.
 
 SLIDES TO DRAFT:
 {slides_specs}

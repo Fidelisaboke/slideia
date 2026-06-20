@@ -234,6 +234,12 @@ async def draft_slides_node(state: AgentState, config: RunnableConfig) -> dict:
     topic = state.get("topic") or state["prompt"]
     audience = state.get("audience") or "General Audience"
 
+    # Inject file context if present (prioritize summarized_context if available)
+    theme_instruction = theme_preset
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        theme_instruction += f"\n\nReference Material:\n{ref_material}"
+
     semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_LLM_CALLS)
     batch_size = 3
     batches = [slide_specs[i : i + batch_size] for i in range(0, len(slide_specs), batch_size)]
@@ -243,7 +249,9 @@ async def draft_slides_node(state: AgentState, config: RunnableConfig) -> dict:
     async def process_batch(batch, start_idx):
         async with semaphore:
             try:
-                res = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                res = await llm.draft_slides_batch(
+                    topic, audience, batch, theme_instruction=theme_instruction
+                )
                 return res.get("slides", []), start_idx
             except Exception as e:
                 logger.error(f"Batch generation failed: {e}")
