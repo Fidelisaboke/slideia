@@ -13,6 +13,7 @@ config:
 graph TD;
 	__start__([<p>__start__</p>]):::first
 	classify_intent(classify_intent)
+	summarize_context(summarize_context)
 	propose_outline(propose_outline)
 	draft_slides(draft_slides)
 	refine_deck(refine_deck)
@@ -23,11 +24,16 @@ graph TD;
 	classify_intent -.-> general_chat;
 	classify_intent -.-> propose_outline;
 	classify_intent -.-> refine_deck;
+	classify_intent -.-> summarize_context;
 	draft_slides --> validate;
 	propose_outline --> draft_slides;
 	refine_deck --> validate;
+	summarize_context -.-> general_chat;
+	summarize_context -.-> propose_outline;
+	summarize_context -.-> refine_deck;
 	validate -.-> __end__;
 	validate -.-> draft_slides;
+	validate -.-> propose_outline;
 	validate -.-> refine_deck;
 	general_chat --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

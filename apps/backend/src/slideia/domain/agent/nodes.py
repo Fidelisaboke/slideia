@@ -145,6 +145,21 @@ async def classify_intent_node(state: AgentState, config: RunnableConfig) -> dic
         }
     except Exception as e:
         logger.error(f"Intent classification failed: {e}")
+        # Fallback to CREATE_DECK if file context is present and no deck exists yet,
+        # or EDIT_DECK if a deck already exists. This avoids routing to general chat
+        # if the intent classifier fails for a presentation generation request.
+        if state.get("deck"):
+            logger.info("Fallback: Assuming EDIT_DECK since a deck already exists.")
+            return {
+                "intent": "EDIT_DECK",
+                "instruction": state.get("prompt"),
+            }
+        elif state.get("file_context"):
+            logger.info("Fallback: Assuming CREATE_DECK since file context is present.")
+            return {
+                "intent": "CREATE_DECK",
+                "instruction": state.get("prompt") or "Create a presentation",
+            }
         return {
             "intent": "CHAT",
             "instruction": None,
@@ -162,10 +177,11 @@ async def propose_outline_node(state: AgentState, config: RunnableConfig) -> dic
     slide_count = state.get("slide_count") or 5
     theme_preset = state.get("theme_preset") or "Default"
 
-    # Inject file context if present
+    # Inject file context if present (prioritize summarized_context if available)
     theme_instruction = theme_preset
-    if state.get("file_context"):
-        theme_instruction += f"\n\nReference Material:\n{state['file_context']}"
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        theme_instruction += f"\n\nReference Material:\n{ref_material}"
 
     try:
         outline = await llm.propose_outline(
@@ -218,6 +234,12 @@ async def draft_slides_node(state: AgentState, config: RunnableConfig) -> dict:
     topic = state.get("topic") or state["prompt"]
     audience = state.get("audience") or "General Audience"
 
+    # Inject file context if present (prioritize summarized_context if available)
+    theme_instruction = theme_preset
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        theme_instruction += f"\n\nReference Material:\n{ref_material}"
+
     semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_LLM_CALLS)
     batch_size = 3
     batches = [slide_specs[i : i + batch_size] for i in range(0, len(slide_specs), batch_size)]
@@ -227,7 +249,9 @@ async def draft_slides_node(state: AgentState, config: RunnableConfig) -> dict:
     async def process_batch(batch, start_idx):
         async with semaphore:
             try:
-                res = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                res = await llm.draft_slides_batch(
+                    topic, audience, batch, theme_instruction=theme_instruction
+                )
                 return res.get("slides", []), start_idx
             except Exception as e:
                 logger.error(f"Batch generation failed: {e}")
@@ -277,8 +301,9 @@ async def refine_deck_node(state: AgentState, config: RunnableConfig) -> dict:
     instruction = state.get("instruction") or state["prompt"]
 
     file_block = ""
-    if state.get("file_context"):
-        file_block = f"USER UPLOADED FILE CONTEXT:\n{state['file_context']}\n"
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        file_block = f"USER UPLOADED FILE CONTEXT:\n{ref_material}\n"
 
     prompt = REFINEMENT_PROMPT_TEMPLATE.format(
         topic=state.get("topic", "Presentation"),
@@ -368,8 +393,9 @@ async def general_chat_node(state: AgentState, config: RunnableConfig) -> dict:
         messages.append({"role": role, "content": msg.content})
 
     # File context
-    if state.get("file_context"):
-        messages.append({"role": "user", "content": f"Context files:\n{state['file_context']}"})
+    ref_material = state.get("summarized_context") or state.get("file_context")
+    if ref_material:
+        messages.append({"role": "user", "content": f"Context files:\n{ref_material}"})
 
     # Current prompt
     messages.append({"role": "user", "content": state["prompt"]})
@@ -391,3 +417,28 @@ async def general_chat_node(state: AgentState, config: RunnableConfig) -> dict:
         return {
             "messages": [AIMessage(content=err_msg)],
         }
+
+
+async def summarize_context_node(state: AgentState, config: RunnableConfig) -> dict:
+    """Summarizes user-provided documents if they exist and haven't been summarized yet."""
+    logger.info("Node: summarize_context_node")
+
+    file_context = state.get("file_context")
+    if not file_context:
+        return {"summarized_context": None}
+
+    await push_to_queue(
+        config,
+        {
+            "status": "Summarizing uploaded documents...",
+            "token": "Extracting key insights and summarizing files... ",
+        },
+    )
+
+    try:
+        summary = await llm.summarize_document(file_context)
+        await push_to_queue(config, {"token": "✓ Summarized reference material.\n"})
+        return {"summarized_context": summary}
+    except Exception as e:
+        logger.error(f"Context summarization failed: {e}")
+        return {"summarized_context": None}

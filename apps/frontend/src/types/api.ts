@@ -152,6 +152,10 @@ export interface FullDeckExportRequest {
   palette?: string[];
   font?: string;
   citations?: string[];
+  /** LLM-generated presentation title (preferred over topic for title slide). */
+  title?: string;
+  /** Custom subtitle for the title slide. */
+  subtitle?: string;
 }
 
 // ── Errors ───────────────────────────────────────────────────────────

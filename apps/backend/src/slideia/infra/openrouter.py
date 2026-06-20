@@ -11,6 +11,7 @@ from slideia.domain.llm.prompts import (
     OUTLINE_PROMPT,
     REGENERATE_SLIDE_PROMPT,
     SLIDE_PROMPT,
+    SUMMARIZATION_PROMPT,
 )
 
 logger = get_logger(__name__)
@@ -25,11 +26,16 @@ def _extract_json(text: str | None) -> str:
     # Try to find a JSON block in markdown, looking for first valid one
     matches = re.findall(r"```json\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
     for match in matches:
+        cleaned = match.strip()
         try:
-            json.loads(match.strip())
-            return match.strip()
+            json.loads(cleaned)
+            return cleaned
         except Exception:
-            continue
+            pass
+
+    # If we found markdown blocks but none were valid JSON, return the first one as a candidate
+    if matches:
+        return matches[0].strip()
 
     # Fallback: find the first { and last } which covers cases where the model
     # might add a preamble or conversational filler outside the JSON.
@@ -37,11 +43,7 @@ def _extract_json(text: str | None) -> str:
     end = text.rfind("}")
     if start != -1 and end != -1:
         candidate = text[start : end + 1].strip()
-        try:
-            json.loads(candidate)
-            return candidate
-        except Exception:
-            pass
+        return candidate
 
     return text.strip()
 
@@ -51,14 +53,14 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
         self.api_key = api_key
         self.model = model
 
-    async def _call(self, prompt: str, max_tokens: int = 2048) -> dict:
+    async def _call(self, prompt: str, max_tokens: int = 2048, json_mode: bool = True) -> dict | str:
         """Call OpenRouter with exponential backoff for rate limits and null-content retries."""
         max_retries = 3
         base_delay = 2.0
 
         for attempt in range(max_retries):
             try:
-                return await self._execute_call(prompt, max_tokens)
+                return await self._execute_call(prompt, max_tokens, json_mode=json_mode)
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429 and attempt < max_retries - 1:
                     delay = base_delay * (2**attempt)
@@ -81,7 +83,7 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
 
         raise RuntimeError("Max retries exceeded")
 
-    async def _execute_call(self, prompt: str, max_tokens: int = 2048) -> dict:
+    async def _execute_call(self, prompt: str, max_tokens: int = 2048, json_mode: bool = True) -> dict | str:
         logger.info("Calling OpenRouter LLM...")
         async with httpx.AsyncClient(timeout=30.0) as client:
             request_payload = {
@@ -123,6 +125,9 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
                     "OpenRouter returned null content. The model may have refused the request or encountered an error."
                 )
 
+            if not json_mode:
+                return content
+
             extracted = _extract_json(content)
             if not extracted:
                 logger.error(f"Failed to extract JSON from content: {content[:200]}...")
@@ -133,6 +138,11 @@ class OpenRouterLLM(OutlineGenerator, SlideGenerator):
             except json.JSONDecodeError as e:
                 logger.error(f"JSON parsing failed for extracted content: {extracted[:200]}...")
                 raise ValueError(f"Failed to parse JSON response: {e}")
+
+    async def summarize_document(self, text: str) -> str:
+        """Summarizes a long raw document to 1000-2000 tokens."""
+        prompt = SUMMARIZATION_PROMPT.format(text=text)
+        return await self._call(prompt, max_tokens=2048, json_mode=False)
 
     async def propose_outline(
         self, topic: str, audience: str, tone: str, slide_count: int, theme_instruction: str = "Default"
