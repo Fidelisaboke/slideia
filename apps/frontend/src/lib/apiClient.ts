@@ -42,15 +42,21 @@ async function streamEvents(
   data: unknown,
   onProgress: (event: GenerationProgressEvent) => void,
   abortController?: AbortController,
+  files?: File[],
 ): Promise<void> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const formData = new FormData();
+  formData.append("payload", JSON.stringify(data));
+  if (files) {
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+  }
+
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: formData,
     signal: abortController?.signal,
   });
 
@@ -113,12 +119,14 @@ export const apiClient = {
     data: ProposeOutlineRequest,
     onProgress: (event: GenerationProgressEvent) => void,
     abortController?: AbortController,
+    files?: File[],
   ): Promise<void> {
     return streamEvents(
       "/propose-outline/stream",
       data,
       onProgress,
       abortController,
+      files,
     );
   },
 
@@ -133,12 +141,14 @@ export const apiClient = {
     data: GenerateDeckRequest,
     onProgress: (event: GenerationProgressEvent) => void,
     abortController?: AbortController,
+    files?: File[],
   ): Promise<void> {
     return streamEvents(
       "/generate-deck/stream",
       data,
       onProgress,
       abortController,
+      files,
     );
   },
 
