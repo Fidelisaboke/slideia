@@ -85,7 +85,7 @@ _IMPORTANT:_ Ensure you mention the agent and model that authored the commit as 
 Co-authored-by: [agent] - [model]
 ```
 
-**NOTE:** For Claude, commit with [claude-model-name] <noreply@anthropic.com>.
+**NOTE:** For Claude, commit with [claude-model-name] <noreply@anthropic.com> instead of the [agent] - [model] format.
 
 ## RESPONSE STRUCTURE
 
