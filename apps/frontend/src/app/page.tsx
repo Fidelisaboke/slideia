@@ -37,6 +37,8 @@ export default function Home() {
     setOutline,
     deck,
     setDeck,
+    uploadedFiles,
+    setUploadedFiles,
     resetDeckState,
   } = useDeck();
 
@@ -70,12 +72,18 @@ export default function Home() {
     tone: string;
     slideCount: number;
     themePreset: ThemePreset;
+    files?: File[];
   }) => {
     setTopic(data.topic);
     setAudience(data.audience);
     setTone(data.tone);
     setSlideCount(data.slideCount);
     setThemePreset(data.themePreset);
+    if (data.files) {
+      setUploadedFiles(data.files);
+    } else {
+      setUploadedFiles([]);
+    }
     setError(null);
 
     // Switch to progress overlay immediately
@@ -116,6 +124,7 @@ export default function Home() {
           }
         },
         controller,
+        data.files,
       );
 
       if (!completed) {
@@ -201,6 +210,7 @@ export default function Home() {
           }
         },
         controller,
+        uploadedFiles,
       );
 
       if (!completed) {

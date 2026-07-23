@@ -3,7 +3,7 @@ import json
 import os
 import tempfile
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Form, File, UploadFile
 from fastapi.responses import StreamingResponse
 from slideia.api.schemas import (
     DeckRequest,
@@ -24,6 +24,7 @@ from slideia.domain.deck.services import (
 )
 from slideia.infra.image_fetcher import ImageFetcher
 from slideia.infra.openrouter import OpenRouterLLM
+from slideia.api.file_utils import extract_file_contexts
 
 logger = get_logger(__name__)
 
@@ -76,21 +77,41 @@ async def generate_outline(request: ProposeOutlineRequest) -> dict:
 
 
 @router.post("/propose-outline/stream")
-async def propose_outline_stream_route(request_data: ProposeOutlineRequest, request: Request):
+async def propose_outline_stream_route(
+    request: Request,
+    payload: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+):
     """
     Propose an outline and stream progress updates via SSE.
     """
+    try:
+        request_data = json.loads(payload)
+        parsed_request = ProposeOutlineRequest(**request_data)
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid payload format: {exc}")
 
     async def sse_generator():
         try:
+            document_context = None
+            if files:
+                yield f"data: {json.dumps({'step': 'outline', 'progress': 5, 'message': 'Processing uploaded files...'})}\n\n"
+                file_context, truncated = await extract_file_contexts(files)
+                if file_context:
+                    yield f"data: {json.dumps({'step': 'outline', 'progress': 10, 'message': 'Summarizing reference documents...'})}\n\n"
+                    document_context = await llm.summarize_document(file_context)
+                    if truncated:
+                        yield f"data: {json.dumps({'step': 'outline', 'progress': 12, 'message': 'Note: files were truncated to fit limits.'})}\n\n"
+
             generator = propose_outline_stream(
-                request_data.topic,
-                request_data.audience,
-                request_data.tone,
-                request_data.slide_count,
+                parsed_request.topic,
+                parsed_request.audience,
+                parsed_request.tone,
+                parsed_request.slide_count,
                 llm,
                 cache,
-                theme_preset=request_data.theme_preset,
+                theme_preset=parsed_request.theme_preset,
+                document_context=document_context,
             )
             async for event in generator:
                 if await request.is_disconnected():
@@ -134,21 +155,39 @@ async def generate_deck(request: DeckRequest):
 
 
 @router.post("/generate-deck/stream")
-async def generate_deck_stream(request_data: DeckRequest, request: Request):
+async def generate_deck_stream_route(
+    request: Request,
+    payload: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+):
     """
     Generate a full slide deck and stream progress updates via SSE.
     """
+    try:
+        request_data = json.loads(payload)
+        parsed_request = DeckRequest(**request_data)
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid payload format: {exc}")
 
     async def sse_generator():
         try:
+            document_context = None
+            if files:
+                yield f"data: {json.dumps({'step': 'outline', 'progress': 2, 'message': 'Processing uploaded files...'})}\n\n"
+                file_context, truncated = await extract_file_contexts(files)
+                if file_context:
+                    yield f"data: {json.dumps({'step': 'outline', 'progress': 5, 'message': 'Summarizing reference documents...'})}\n\n"
+                    document_context = await llm.summarize_document(file_context)
+
             generator = generate_full_deck_stream(
-                request_data.topic,
-                request_data.audience,
-                request_data.tone,
-                request_data.slide_count,
+                parsed_request.topic,
+                parsed_request.audience,
+                parsed_request.tone,
+                parsed_request.slide_count,
                 llm,
                 cache,
-                theme_preset=request_data.theme_preset,
+                theme_preset=parsed_request.theme_preset,
+                document_context=document_context,
             )
             async for event in generator:
                 # Check for disconnection

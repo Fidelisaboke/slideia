@@ -38,7 +38,7 @@ def test_propose_outline_stream_success(client, outline_request):
         }
 
     with patch("slideia.api.routes.propose_outline_stream", side_effect=fake_outline_stream):
-        response = client.post("/propose-outline/stream", json=outline_request)
+        response = client.post("/propose-outline/stream", data={"payload": json.dumps(outline_request)})
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
@@ -62,7 +62,7 @@ def test_propose_outline_stream_error(client, outline_request):
         raise Exception("Outline failed")
 
     with patch("slideia.api.routes.propose_outline_stream", side_effect=fake_outline_stream_error):
-        response = client.post("/propose-outline/stream", json=outline_request)
+        response = client.post("/propose-outline/stream", data={"payload": json.dumps(outline_request)})
 
         events = []
         for line in response.iter_lines():

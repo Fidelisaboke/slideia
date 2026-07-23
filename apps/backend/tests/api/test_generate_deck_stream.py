@@ -43,7 +43,7 @@ def test_generate_deck_stream_success(client, deck_request):
         yield {"step": "complete", "progress": 100, "message": "Done!", "data": {"outline": {}, "slides": []}}
 
     with patch("slideia.api.routes.generate_full_deck_stream", side_effect=fake_stream):
-        response = client.post("/generate-deck/stream", json=deck_request)
+        response = client.post("/generate-deck/stream", data={"payload": json.dumps(deck_request)})
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
@@ -67,7 +67,7 @@ def test_generate_deck_stream_error(client, deck_request):
         raise Exception("Stream failed")
 
     with patch("slideia.api.routes.generate_full_deck_stream", side_effect=fake_stream_error):
-        response = client.post("/generate-deck/stream", json=deck_request)
+        response = client.post("/generate-deck/stream", data={"payload": json.dumps(deck_request)})
 
         events = []
         for line in response.iter_lines():

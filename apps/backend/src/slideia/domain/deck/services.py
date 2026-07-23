@@ -47,6 +47,7 @@ async def generate_full_deck(
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
     theme_preset: str = "Default",
+    document_context: str | None = None,
 ) -> Deck:
     cached = cache.get(topic, audience, tone, slide_count)
     if cached:
@@ -60,12 +61,16 @@ async def generate_full_deck(
 
     logger.info("Generating new deck...")
 
+    theme_instruction = theme_preset
+    if document_context:
+        theme_instruction += f"\n\nReference Material:\n{document_context}"
+
     outline_data = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
         slide_count=slide_count,
-        theme_instruction=theme_preset,
+        theme_instruction=theme_instruction,
     )
 
     # Use Semaphore to limit concurrent calls to respect rate limits
@@ -77,7 +82,9 @@ async def generate_full_deck(
     async def process_batch(batch):
         async with semaphore:
             try:
-                result = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                result = await llm.draft_slides_batch(
+                    topic, audience, batch, theme_instruction=theme_instruction
+                )
                 return result.get("slides", [])
             except Exception as e:
                 logger.error(f"Batch generation failed, skipping {len(batch)} slides: {e}")
@@ -119,6 +126,7 @@ async def generate_full_deck_stream(
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
     theme_preset: str = "Default",
+    document_context: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     """
     Generate a full deck and yield progress events.
@@ -134,12 +142,16 @@ async def generate_full_deck_stream(
     # Step 1: Outline
     yield {"step": "outline", "progress": 10, "message": "Analyzing topic and structuring the story..."}
 
+    theme_instruction = theme_preset
+    if document_context:
+        theme_instruction += f"\n\nReference Material:\n{document_context}"
+
     outline_data = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
         slide_count=slide_count,
-        theme_instruction=theme_preset,
+        theme_instruction=theme_instruction,
     )
 
     slide_specs = outline_data.get("slides", [])
@@ -155,7 +167,9 @@ async def generate_full_deck_stream(
     async def process_batch_with_progress(batch, start_idx):
         async with semaphore:
             try:
-                result = await llm.draft_slides_batch(topic, audience, batch, theme_instruction=theme_preset)
+                result = await llm.draft_slides_batch(
+                    topic, audience, batch, theme_instruction=theme_instruction
+                )
                 return result.get("slides", []), start_idx
             except Exception as e:
                 logger.error(f"Batch failed (slides {start_idx + 1}–{start_idx + len(batch)}): {e}")
@@ -206,6 +220,7 @@ async def propose_outline_stream(
     llm: OpenRouterLLM,
     cache: Cache | RedisCache,
     theme_preset: str = "Default",
+    document_context: str | None = None,
 ) -> AsyncGenerator[dict, None]:
     """
     Propose an outline and yield progress events.
@@ -230,12 +245,16 @@ async def propose_outline_stream(
     # but we can simulate progress and use the async call.
     yield {"step": "outline", "progress": 50, "message": "Drafting structural framework..."}
 
+    theme_instruction = theme_preset
+    if document_context:
+        theme_instruction += f"\n\nReference Material:\n{document_context}"
+
     outline = await llm.propose_outline(
         topic=topic,
         audience=audience,
         tone=tone,
         slide_count=slide_count,
-        theme_instruction=theme_preset,
+        theme_instruction=theme_instruction,
     )
 
     yield {"step": "outline", "progress": 90, "message": "Finalizing presentation structure..."}

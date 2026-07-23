@@ -28,6 +28,8 @@ interface DeckContextValue {
   setDeck: (deck: GenerateDeckResponse | null) => void;
   currentSlideIndex: number;
   setCurrentSlideIndex: (index: number) => void;
+  uploadedFiles: File[];
+  setUploadedFiles: (files: File[]) => void;
   resetDeckState: () => void;
 }
 
@@ -43,6 +45,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
   const [outline, setOutline] = useState<ProposeOutlineResponse | null>(null);
   const [deck, setDeck] = useState<GenerateDeckResponse | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const resetDeckState = () => {
     setStep("form");
@@ -54,6 +57,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
     setOutline(null);
     setDeck(null);
     setCurrentSlideIndex(0);
+    setUploadedFiles([]);
   };
 
   return (
@@ -77,6 +81,8 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
         setDeck,
         currentSlideIndex,
         setCurrentSlideIndex,
+        uploadedFiles,
+        setUploadedFiles,
         resetDeckState,
       }}
     >

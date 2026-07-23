@@ -12,6 +12,7 @@ interface HeroProps {
     tone: string;
     slideCount: number;
     themePreset: ThemePreset;
+    files?: File[];
   }) => void;
   isLoading: boolean;
 }

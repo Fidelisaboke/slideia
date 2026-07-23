@@ -80,10 +80,12 @@ _IMPORTANT:_ Ensure you mention the agent and model that authored the commit as 
 ```
 <type>(<scope>): <description>
 
-<optional body - very brief summary; bullet points of changes made. Keep it concise!>
+[optional body - very brief summary; bullet points of changes made. Keep it concise!]
 
-Co-authored-by: <agent> - <model>
+Co-authored-by: [agent] - [model]
 ```
+
+**NOTE:** For Claude, commit with [claude-model-name] <noreply@anthropic.com>.
 
 ## RESPONSE STRUCTURE
 
