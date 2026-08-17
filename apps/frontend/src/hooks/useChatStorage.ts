@@ -10,6 +10,7 @@ import { Conversation } from "@/types/chat";
 
 const STORAGE_PREFIX = "slideia_chat_";
 const INDEX_KEY = "slideia_chat_index";
+const ACTIVE_CONVERSATION_KEY = "slideia_chat_active_conversation";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -88,7 +89,37 @@ export function deleteConversation(id: string): void {
 
     const index = getIndex().filter((i) => i !== id);
     setIndex(index);
+
+    if (getActiveConversationId() === id) {
+      const nextActive = index[0] ?? null;
+      setActiveConversationId(nextActive);
+    }
   } catch (err) {
     console.error("[useChatStorage] Failed to delete conversation:", err);
+  }
+}
+
+export function getActiveConversationId(): string | null {
+  try {
+    const activeId = localStorage.getItem(ACTIVE_CONVERSATION_KEY);
+    if (activeId) return activeId;
+
+    const index = getIndex();
+    return index[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveConversationId(id: string | null): void {
+  try {
+    if (!id) {
+      localStorage.removeItem(ACTIVE_CONVERSATION_KEY);
+      return;
+    }
+
+    localStorage.setItem(ACTIVE_CONVERSATION_KEY, id);
+  } catch (err) {
+    console.error("[useChatStorage] Failed to set active conversation:", err);
   }
 }
