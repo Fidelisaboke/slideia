@@ -11,7 +11,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { saveConversation, loadConversation } from "@/hooks/useChatStorage";
+import {
+  getActiveConversationId,
+  loadConversation,
+  saveConversation,
+  setActiveConversationId,
+} from "@/hooks/useChatStorage";
 import { useDeck } from "@/contexts/DeckContext";
 import {
   ChatMessage,
@@ -44,9 +49,9 @@ interface UseChatReturn {
 }
 
 export function useChat(initialConversationId?: string): UseChatReturn {
-  const [conversationId] = useState<string>(
-    () => initialConversationId || generateId(),
-  );
+  const [conversationId, setConversationId] = useState<string>(() => {
+    return initialConversationId || getActiveConversationId() || generateId();
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [agentStatus, setAgentStatus] = useState<string | null>(null);
@@ -70,9 +75,11 @@ export function useChat(initialConversationId?: string): UseChatReturn {
   // ── Restore from localStorage on mount ───────────────────────────
   useEffect(() => {
     const saved = loadConversation(conversationId);
-    if (saved && saved.messages.length > 0) {
-      setMessages(saved.messages);
-    }
+    setMessages(saved?.messages ?? []);
+  }, [conversationId]);
+
+  useEffect(() => {
+    setActiveConversationId(conversationId);
   }, [conversationId]);
 
   // ── Persist to localStorage on every message change ──────────────
@@ -306,6 +313,7 @@ export function useChat(initialConversationId?: string): UseChatReturn {
     setError(null);
     setIsStreaming(false);
     setAgentStatus(null);
+    setConversationId(generateId());
   }, []);
 
   const dismissError = useCallback(() => setError(null), []);
